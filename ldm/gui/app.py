@@ -233,10 +233,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self.limiter_btn.connect("toggled", lambda b: self.set_limiter(b.get_active()))
         theme.style(self.limiter_btn, "ldm-ghost")
         hb.pack_end(self.limiter_btn)
-        hb.pack_end(self._button("Pausar tudo", self.m.pause_all, "ldm-ghost", tip="Pausar todos os downloads"))
+        hb.pack_end(self._button(None, self.m.pause_all, "ldm-ghost", icon=theme.icon("media-playback-stop"),
+                                 tip="Pausar todos os downloads"))
         tools = Gtk.Box(spacing=0)
         tools.get_style_context().add_class("linked")
-        tools.pack_start(self._button(None, self.scheduler, "ldm-ghost", icon=theme.icon("alarm-symbolic"), tip="Agendador"),
+        tools.pack_start(self._button(None, self.scheduler, "ldm-ghost", icon=theme.icon("alarm"), tip="Agendador"),
                          False, False, 0)
         tools.pack_start(self._button(None, self.options, "ldm-ghost", icon=theme.icon("preferences-system"), tip="Opções"),
                          False, False, 0)
