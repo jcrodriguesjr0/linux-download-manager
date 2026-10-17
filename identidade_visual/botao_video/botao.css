@@ -1,0 +1,6 @@
+/* Botão "Baixar este vídeo" (browser_extension/content.js), dentro de um shadow DOM sobre o <video> */
+button{all:unset;font:600 12px/1 system-ui,sans-serif;background:rgba(11,95,196,.93);color:#fff;
+  border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:6px 10px;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px;white-space:nowrap}
+button:hover{background:#1a73e8}
+svg{width:14px;height:14px;flex:none}   /* ícone: seta.svg */

@@ -1,0 +1,15 @@
+{
+  "marca": {
+    "azul_claro_gradiente": "#3fa0ff",
+    "azul_principal": "#0b5fc4",
+    "azul_contorno": "#08458f",
+    "azul_hover": "#1a73e8",
+    "branco": "#ffffff"
+  },
+  "popup_extensao_claro": { "fundo": "#ffffff", "texto": "#1d1d1f", "secundario": "#666666", "linha": "#dddddd", "destaque": "#0b5fc4" },
+  "popup_extensao_escuro": { "fundo": "#1f1f23", "texto": "#eeeeee", "secundario": "#aaaaaa", "linha": "#3a3a40", "destaque": "#4ea3ff" },
+  "mapa_de_conexoes": { "fundo": "#d9d9d9", "baixado": "#2e7dd9", "divisor_de_conexao": "#1a1a1a" },
+  "botao_sobre_o_video": { "fundo": "rgba(11,95,196,.93)", "hover": "#1a73e8", "borda": "rgba(255,255,255,.35)", "sombra": "0 2px 10px rgba(0,0,0,.45)" },
+  "badge_da_extensao": "#0b5fc4",
+  "tipografia": { "extensao": "system-ui, sans-serif (popup 13px; botão 600 12px)", "programa": "fonte do tema GTK do sistema" }
+}

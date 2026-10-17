@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fff; --fg: #1d1d1f; --muted: #666; --line: #ddd; --accent: #0b5fc4; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1f1f23; --fg: #eee; --muted: #aaa; --line: #3a3a40; --accent: #4ea3ff; } }
+  body { font: 13px system-ui, sans-serif; margin: 0; width: 340px; background: var(--bg); color: var(--fg); }
+  header { display: flex; align-items: center; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); }
+  header img { width: 24px; }
+  header b { flex: 1; }
+  #st { font-size: 11px; color: var(--muted); }
+  section { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .m { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+  .m span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+  button.sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  label { display: flex; gap: 6px; align-items: center; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  input[type=number] { width: 70px; }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<header><img src="icon48.png" alt=""><b>Linux Download Manager</b><span id="st">...</span></header>
+<section>
+  <button id="video" style="width:100%;padding:8px">⬇ Baixar o vídeo desta página</button>
+</section>
+<section>
+  <label><input type="checkbox" id="capture"> Capturar downloads do navegador</label>
+  <label><input type="checkbox" id="overlay"> Mostrar "Baixar este vídeo" sobre os players</label>
+</section>
+<section>
+  <h4>Streams capturados nesta aba</h4>
+  <div id="media"><div class="empty">Nenhum ainda. Dê play no vídeo.</div></div>
+</section>
+<section class="row">
+  <button id="all">Baixar todos os links</button>
+  <button id="show" class="sec">Abrir o LDM</button>
+</section>
+<section class="row">
+  <label>Porta da API <input type="number" id="port" min="1024" max="65535"></label>
+</section>
+<script src="popup.js"></script>
+</body>
+</html>
