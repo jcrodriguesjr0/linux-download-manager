@@ -1,15 +1,63 @@
 {
   "marca": {
-    "azul_claro_gradiente": "#3fa0ff",
-    "azul_principal": "#0b5fc4",
-    "azul_contorno": "#08458f",
-    "azul_hover": "#1a73e8",
-    "branco": "#ffffff"
+    "primaria": "#F43F5E",
+    "primaria_claro": "#FB7185",
+    "primaria_escuro": "#E11D48",
+    "primaria_brilho": "#FDA4AF",
+    "gradiente": ["#FDA4AF", "#FB7185", "#F43F5E", "#E11D48"],
+    "borda_squircle": "#382229",
+    "base_grafite": "#141316",
+    "superficie_card": "#1E1A1E"
   },
-  "popup_extensao_claro": { "fundo": "#ffffff", "texto": "#1d1d1f", "secundario": "#666666", "linha": "#dddddd", "destaque": "#0b5fc4" },
-  "popup_extensao_escuro": { "fundo": "#1f1f23", "texto": "#eeeeee", "secundario": "#aaaaaa", "linha": "#3a3a40", "destaque": "#4ea3ff" },
-  "mapa_de_conexoes": { "fundo": "#d9d9d9", "baixado": "#2e7dd9", "divisor_de_conexao": "#1a1a1a" },
-  "botao_sobre_o_video": { "fundo": "rgba(11,95,196,.93)", "hover": "#1a73e8", "borda": "rgba(255,255,255,.35)", "sombra": "0 2px 10px rgba(0,0,0,.45)" },
-  "badge_da_extensao": "#0b5fc4",
-  "tipografia": { "extensao": "system-ui, sans-serif (popup 13px; botão 600 12px)", "programa": "fonte do tema GTK do sistema" }
+  "papeis_semanticos": {
+    "base": { "hex": "#141316", "descricao": "Fundo da janela principal e diálogos escuros" },
+    "superficie": { "hex": "#1E1A1E", "descricao": "Barras, cartões e painéis laterais" },
+    "superficie_elevada": { "hex": "#272228", "descricao": "Menus suspensos e tooltips" },
+    "borda_divisoria": { "hex": "#382229", "descricao": "Linhas sutis e contornos" },
+    "primaria_download": { "hex": "#F43F5E", "descricao": "Marca, botões de ação principal, barras de download" },
+    "destaque_video": { "hex": "#F59E0B", "hover": "#FBBF24", "descricao": "Tudo relacionado a vídeo e captura web" },
+    "sucesso": { "hex": "#22C55E", "descricao": "Downloads concluídos e verificação de integridade" },
+    "erro": { "hex": "#EF4444", "descricao": "Falha de conexão, link expirado ou erro no disco" }
+  },
+  "popup_extensao_escuro": {
+    "fundo": "#141316",
+    "cartao": "#1E1A1E",
+    "texto": "#F1F5F9",
+    "secundario": "#94A3B8",
+    "linha": "#2E242A",
+    "destaque": "#F43F5E",
+    "destaque_video": "#F59E0B"
+  },
+  "popup_extensao_claro": {
+    "fundo": "#FFFFFF",
+    "cartao": "#F8FAFC",
+    "texto": "#0F172A",
+    "secundario": "#64748B",
+    "linha": "#E2E8F0",
+    "destaque": "#F43F5E",
+    "destaque_video": "#F59E0B"
+  },
+  "mapa_de_conexoes": {
+    "fundo_canal": "#232025",
+    "segmento_baixado": "#F43F5E",
+    "segmento_ativo_glow": "#FB7185",
+    "divisor_conexao": "#141316"
+  },
+  "botao_sobre_o_video": {
+    "fundo": "rgba(20, 22, 27, 0.88)",
+    "hover": "rgba(26, 29, 36, 0.96)",
+    "borda": "rgba(245, 158, 11, 0.35)",
+    "borda_hover": "#F59E0B",
+    "texto": "#F1F5F9",
+    "icone_ambar": "#F59E0B",
+    "sombra": "0 4px 18px rgba(0, 0, 0, 0.55)",
+    "glow_hover": "0 0 16px rgba(245, 158, 11, 0.28)"
+  },
+  "badge_da_extensao": "#F43F5E",
+  "tipografia": {
+    "interface": "Inter, system-ui, -apple-system, sans-serif",
+    "numeros_e_metricas": "JetBrains Mono, monospace (font-variant-numeric: tabular-nums)",
+    "tamanhos_toque_steam_deck": "Alvos de toque mínimos de 44px"
+  }
 }
+

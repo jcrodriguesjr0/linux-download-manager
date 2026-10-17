@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Tray -->
+  <rect x="2" y="13.5" width="12" height="1.8" rx="0.9" fill="#F43F5E"/>
+  <!-- 3 Streams -->
+  <rect x="3" y="1.5" width="2" height="5.5" rx="1" fill="#F43F5E"/>
+  <rect x="7" y="0.5" width="2" height="6.5" rx="1" fill="#F43F5E"/>
+  <rect x="11" y="1.5" width="2" height="5.5" rx="1" fill="#F43F5E"/>
+  <!-- Arrow Head -->
+  <path d="M 8 11.8 L 2 6 L 14 6 Z" fill="#F43F5E"/>
+</svg>

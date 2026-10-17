@@ -30,12 +30,12 @@ class VideoDialog(Gtk.Window):
         self.info = None
         self.folder_touched = False
         self.set_default_size(760, 560)
-        self.set_icon_name("video-x-generic")
+        self.set_icon_name("ldm-video-x-generic")
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, margin=12)
         self.add(outer)
 
         head = Gtk.Box(spacing=12)
-        self.thumb = Gtk.Image.new_from_icon_name("video-x-generic", Gtk.IconSize.DIALOG)
+        self.thumb = Gtk.Image.new_from_icon_name("ldm-video-x-generic", Gtk.IconSize.DIALOG)
         self.thumb.set_size_request(192, 108)
         head.pack_start(self.thumb, False, False, 0)
         tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -65,7 +65,9 @@ class VideoDialog(Gtk.Window):
             self.tv.append_column(c)
         self.tv.get_selection().connect("changed", self._on_select)
         self.tv.connect("row-activated", lambda *_: self._go(True))
-        outer.pack_start(scrolled(self.tv, 230), True, True, 0)
+        sw = scrolled(self.tv, 230)
+        sw.get_style_context().add_class("ldm-videolist")
+        outer.pack_start(sw, True, True, 0)
 
         opts = Gtk.Grid(column_spacing=8, row_spacing=6)
         self.name = entry(self.p.get("title") or "")
@@ -91,7 +93,7 @@ class VideoDialog(Gtk.Window):
         later = Gtk.Button(label="Baixar depois")
         later.connect("clicked", lambda _: self._go(False))
         self.go_b = Gtk.Button(label="Baixar agora")
-        self.go_b.get_style_context().add_class("suggested-action")
+        self.go_b.get_style_context().add_class("ldm-video")   # âmbar = vídeo
         self.go_b.connect("clicked", lambda _: self._go(True))
         cancel = Gtk.Button(label="Cancelar")
         cancel.connect("clicked", lambda _: self.destroy())

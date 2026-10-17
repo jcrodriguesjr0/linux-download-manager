@@ -10,7 +10,7 @@
     if (ch.overlay) { enabled = ch.overlay.newValue; if (!enabled) hide(); }
   });
 
-  let host, label, current, hideTimer, raf, lastMove = 0;
+  let host, label, quality, qualityDiv, current, hideTimer, raf, lastMove = 0;
 
   // ---- ponte com page_hook.js (contexto da página): vídeos achados no conteúdo das respostas
   const TAG = "__ldm_page_hook__";
@@ -48,16 +48,33 @@
     host = document.createElement("ldm-video-panel");
     host.style.cssText = "all:initial;position:fixed;z-index:2147483647;top:0;left:0;display:none;";
     const sh = host.attachShadow({ mode: "closed" });
+    // Identidade "Fluxo Segmentado": pílula escura em vidro fosco, âmbar = vídeo.
     sh.innerHTML = `<style>
-      button{all:unset;font:600 12px/1 system-ui,sans-serif;background:rgba(11,95,196,.93);color:#fff;
-        border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:6px 10px;cursor:pointer;
-        box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px;white-space:nowrap}
-      button:hover{background:#1a73e8} svg{width:14px;height:14px;flex:none}</style>
-      <button title="Linux Download Manager"><svg viewBox="0 0 24 24" fill="#fff"><path d="M10 3h4v8h4l-6 7-6-7h4zM5 20h14v2H5z"/></svg><span>Baixar este vídeo</span></button>`;
-    label = sh.querySelector("span");
-    const btn = sh.querySelector("button");
-    btn.addEventListener("click", onClick, true);
-    btn.addEventListener("mousedown", (e) => e.stopPropagation(), true);
+      .pill{display:inline-flex;align-items:center;background:rgba(20,22,27,.88);backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);border:1px solid rgba(245,158,11,.35);border-radius:9999px;
+        box-shadow:0 4px 18px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);padding:2px 4px;color:#f1f5f9;
+        font-family:Inter,system-ui,-apple-system,sans-serif;transition:all .2s cubic-bezier(.16,1,.3,1);user-select:none}
+      .pill:hover{background:rgba(26,29,36,.96);border-color:#f59e0b;box-shadow:0 6px 22px rgba(0,0,0,.65),0 0 16px rgba(245,158,11,.28)}
+      button{all:unset;display:flex;align-items:center;cursor:pointer;line-height:1;white-space:nowrap}
+      .main{gap:7px;padding:6px 10px 6px 8px;font-size:12px;font-weight:600;letter-spacing:.01em;color:#f1f5f9}
+      .main:hover{color:#fff}
+      svg.ic{width:14px;height:14px;flex:none;filter:drop-shadow(0 0 4px rgba(245,158,11,.4))}
+      .div{width:1px;height:14px;background:rgba(245,158,11,.25);margin:0 2px}
+      .q{padding:6px 8px;color:#f59e0b;font-size:11px;font-weight:600;border-radius:9999px;transition:background .15s,color .15s}
+      .q:hover{background:rgba(245,158,11,.15);color:#fbbf24}
+      .q svg{width:10px;height:10px;margin-left:2px}
+      .hid{display:none}</style>
+      <div class="pill" title="Linux Download Manager">
+        <button class="main"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="20.5" width="18" height="2.5" rx="1.25" fill="#F59E0B"/><rect x="5" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><rect x="10.5" y="0.5" width="3" height="10" rx="1.5" fill="#F59E0B"/><rect x="16" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><path d="M12 18 3.5 9.5h17z" fill="#F59E0B"/></svg><span>Baixar este vídeo</span></button>
+        <span class="div hid"></span>
+        <button class="q hid" title="Escolher a qualidade no LDM"><b></b><svg viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>`;
+    label = sh.querySelector(".main span");
+    quality = sh.querySelector(".q");
+    qualityDiv = sh.querySelector(".div");
+    const pill = sh.querySelector(".pill");          // a pílula inteira é clicável (botão, divisor e qualidade)
+    pill.addEventListener("click", onClick, true);
+    pill.addEventListener("mousedown", (e) => e.stopPropagation(), true);
     host.addEventListener("mouseenter", () => clearTimeout(hideTimer));
     host.addEventListener("mouseleave", scheduleHide);
     attach();
@@ -90,6 +107,11 @@
     if (!enabled || !visibleVideo(v)) return;
     ensure();
     current = v;
+    // resolução que o player está tocando agora; o LDM mostra todas as qualidades ao clicar
+    const h = v.videoHeight || 0;
+    quality.classList.toggle("hid", !h);
+    qualityDiv.classList.toggle("hid", !h);
+    if (h) quality.querySelector("b").textContent = `${h}p`;
     clearTimeout(hideTimer);
     cancelAnimationFrame(raf);
     place();

@@ -4,19 +4,19 @@
 
 Gerenciador de downloads para Linux inspirado no Internet Download Manager. Acelera downloads com várias conexões e baixa vídeos de qualquer site por meio de uma extensão do navegador. Também tem filas, agendador, limitador de velocidade e Site Grabber.
 
-![Janela principal](identidade_visual/telas/appimage_main.png)
+![Janela principal](docs/screenshots/main-dark.png)
 
 ## Download
 
-**[⬇ Linux_Download_Manager-1.2.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, arquivo único, sem instalar nada)
+**[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, arquivo único, sem instalar nada)
 
 Traz Python 3.12, GTK 3, yt-dlp, Deno e ffmpeg. Roda em qualquer Linux x86_64 com glibc ≥ 2.39: SteamOS, Ubuntu 24.04+, Fedora 40+, Arch.
 
 ```bash
-chmod +x Linux_Download_Manager-1.2.0-x86_64.AppImage
-./Linux_Download_Manager-1.2.0-x86_64.AppImage            # abre o programa
-./Linux_Download_Manager-1.2.0-x86_64.AppImage install    # cria o atalho no menu de aplicativos
-./Linux_Download_Manager-1.2.0-x86_64.AppImage selftest   # diagnóstico dos componentes embutidos
+chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage
+./Linux_Download_Manager-1.3.0-x86_64.AppImage            # abre o programa
+./Linux_Download_Manager-1.3.0-x86_64.AppImage install    # cria o atalho no menu de aplicativos
+./Linux_Download_Manager-1.3.0-x86_64.AppImage selftest   # diagnóstico dos componentes embutidos
 ```
 
 Depois, instale a extensão do navegador (veja abaixo).
@@ -61,10 +61,15 @@ Depois, instale a extensão do navegador (veja abaixo).
 - Explora um site por níveis de links, tipos de arquivo, caminhos e tamanho, e salva projetos.
 
 **Integração com o desktop**
-- Ícone na bandeja, início automático ao ligar o computador (minimizado, opcional) e modo escuro.
+- Ícone na bandeja e início automático ao ligar o computador (minimizado, opcional).
+- Identidade "Fluxo Segmentado": escuro primeiro, com modo claro, ícones próprios e as fontes Inter e JetBrains Mono embutidas. Os arquivos ficam em `identidade_visual/`.
 - Notificações e sons; antivírus após o download.
 
-![Grabber de vídeo](identidade_visual/telas/videopassive.png) ![Progresso](identidade_visual/telas/progress.png)
+| Botão sobre qualquer player | Escolha da qualidade | Progresso |
+|---|---|---|
+| ![Botão de vídeo](docs/screenshots/video-button.png) | ![Diálogo de vídeo](docs/screenshots/video.png) | ![Progresso](docs/screenshots/progress.png) |
+
+Modo claro: ![Modo claro](docs/screenshots/main-light.png)
 
 ## Extensão do navegador
 
@@ -152,6 +157,7 @@ python3 packaging/appimage/build_appimage.py      # resultado em dist/
 | [GTK 3](https://gtk.org/), GLib, PyGObject | LGPL-2.1+ |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
 | [Deno](https://deno.com/) | MIT |
+| Fontes [Inter](https://rsms.me/inter/) e [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (`data/fonts`) | SIL OFL 1.1 |
 | [FFmpeg](https://ffmpeg.org/), build estático de [John Van Sickle](https://johnvansickle.com/ffmpeg/) | GPL-3.0; código-fonte nos links |
 
 ## Licença

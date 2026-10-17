@@ -45,7 +45,8 @@ DEFAULT_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 
 DEFAULTS = {
     "language": "pt",
-    "dark_mode": False,
+    "dark_mode": True,                 # identidade "Fluxo Segmentado": escuro primeiro
+    "identity_version": 2,
     "launch_on_startup": False,
     "monitor_clipboard": True,
     "tray_icon": True,
@@ -111,13 +112,22 @@ class Settings:
         self.path = path
         self._lock = threading.Lock()
         self.data = json.loads(json.dumps(DEFAULTS))
+        saved = {}
         if path.exists():
             try:
-                self.data.update(json.loads(path.read_text()))
+                saved = json.loads(path.read_text())
+                self.data.update(saved)
             except Exception:
                 pass
+        changed = False
         if not self.data.get("api_token"):
             self.data["api_token"] = secrets.token_urlsafe(24)
+            changed = True
+        if saved and saved.get("identity_version", 1) < 2:   # nova identidade visual: liga o modo escuro uma vez
+            self.data["identity_version"] = 2
+            self.data["dark_mode"] = True
+            changed = True
+        if changed:
             self.save()
 
     def __getitem__(self, k):

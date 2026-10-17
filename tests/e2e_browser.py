@@ -179,7 +179,9 @@ threading.Thread(target=web.serve_forever, daemon=True).start()
 BASE = f"http://127.0.0.1:{web.server_port}"
 
 s = config.Settings()
-s.data.update(api_port=9614, general_folder=str(OUT), temp_dir=str(TMP / "tmp"), video_folder=str(OUT / "video"),
+# LDM_E2E_PORT: roda o teste ao lado de um LDM já aberto (a extensão é copiada com a porta trocada)
+PORT = int(os.environ.get("LDM_E2E_PORT", "9614"))
+s.data.update(api_port=PORT, general_folder=str(OUT), temp_dir=str(TMP / "tmp"), video_folder=str(OUT / "video"),
               video_max_height=360, capture_exts="ZIP MP4", show_complete_dialog=False)
 s["categories"] = [c | {"folder": str(OUT / c["name"])} for c in s["categories"]]
 m = Manager(s)
@@ -215,11 +217,20 @@ def hover_and_click_panel(page, selector="video"):
                            " return h && h.style.display === 'block'; }", timeout=8000)
     hb = page.evaluate("() => { const r = document.querySelector('ldm-video-panel').getBoundingClientRect();"
                        " return {x: r.x, y: r.y, w: r.width, h: r.height}; }")
+    if os.environ.get("LDM_E2E_SHOT") and not os.path.exists(os.environ["LDM_E2E_SHOT"]):
+        page.mouse.move(hb["x"] + hb["w"] / 2, hb["y"] + hb["h"] / 2)
+        page.wait_for_timeout(400)
+        page.screenshot(path=os.environ["LDM_E2E_SHOT"], clip={"x": box["x"], "y": box["y"], "width": box["width"], "height": min(box["height"], 300)})
     page.mouse.click(hb["x"] + hb["w"] / 2, hb["y"] + hb["h"] / 2)
     return hb
 
 
 ext = str(ROOT / "browser_extension")
+if PORT != 9614:
+    shutil.copytree(ext, TMP / "ext", dirs_exist_ok=True)
+    bg = TMP / "ext" / "background.js"
+    bg.write_text(bg.read_text().replace("const DEFAULT_PORT = 9614;", f"const DEFAULT_PORT = {PORT};"))
+    ext = str(TMP / "ext")
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
         str(TMP / "profile"), channel="chromium", headless=True, accept_downloads=True,

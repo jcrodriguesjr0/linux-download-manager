@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Dark graphite base -->
+  <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#141316" stroke="#382229" stroke-width="0.75"/>
+  <!-- Tray -->
+  <rect x="3.5" y="12.2" width="9" height="1.2" rx="0.6" fill="#F43F5E"/>
+  <!-- 3 Streams -->
+  <rect x="4.2" y="3.5" width="1.4" height="4.5" rx="0.7" fill="#FB7185"/>
+  <rect x="7.3" y="2.5" width="1.4" height="5.5" rx="0.7" fill="#FDA4AF"/>
+  <rect x="10.4" y="3.5" width="1.4" height="4.5" rx="0.7" fill="#FB7185"/>
+  <!-- Arrow Head -->
+  <path d="M 8 11.2 L 3.5 7 L 12.5 7 Z" fill="#F43F5E"/>
+</svg>

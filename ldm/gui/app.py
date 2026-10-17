@@ -1,10 +1,11 @@
-"""Janela principal do Linux Download Manager (GTK3), no layout do IDM:
-menu + barra de ferramentas + árvore de categorias/filas à esquerda + lista de downloads à direita."""
+"""Janela principal do Linux Download Manager (GTK3), na identidade "Fluxo Segmentado":
+barra de título com as ações principais + menu, lateral de categorias/filas, lista com o mapa de conexões
+ao vivo e rodapé com a velocidade global."""
 import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
+from urllib.parse import urlparse
 
 import gi
 
@@ -17,17 +18,21 @@ from ..i18n import _, set_language  # noqa: E402
 from ..manager import Manager  # noqa: E402
 from ..server import Api  # noqa: E402
 from . import dialogs as D  # noqa: E402
+from . import theme  # noqa: E402
 from . import video as V  # noqa: E402
+from .live import SegmentCell, Sparkline  # noqa: E402
 from .panels import GrabberWindow, OptionsDialog, SchedulerWindow  # noqa: E402
 from .widgets import confirm, message  # noqa: E402
 
-ICON = str(Path(__file__).resolve().parents[2] / "data" / "ldm.svg")
+ICON = theme.LOGO
 STATUS_TXT = {ST_QUEUED: "Na fila", ST_CONNECTING: "Conectando", ST_DOWNLOADING: "Baixando",
               ST_PAUSED: "Pausado", ST_COMPLETE: "Concluído", ST_ERROR: "Erro"}
 # colunas da ListStore
-C_ID, C_ICON, C_NAME, C_SIZE, C_STATUS, C_ETA, C_RATE, C_LAST, C_DESC, C_SIZE_N, C_ADDED, C_PROG, C_LAST_N, C_RATE_N, C_ETA_N = range(15)
-COLUMNS = [("name", "Nome do arquivo", C_NAME, C_NAME), ("size", "Tamanho", C_SIZE, C_SIZE_N),
-           ("status", "Status", C_STATUS, C_PROG), ("time_left", "Tempo restante", C_ETA, C_ETA_N),
+(C_ID, C_ICON, C_NAME, C_SIZE, C_STATUS, C_ETA, C_RATE, C_LAST, C_DESC, C_SIZE_N, C_ADDED, C_PROG, C_LAST_N,
+ C_RATE_N, C_ETA_N, C_MARKUP) = range(16)
+N_COLS = 16
+COLUMNS = [("name", "Arquivo / nome", C_NAME, C_NAME), ("size", "Tamanho", C_SIZE, C_SIZE_N),
+           ("status", "Progresso", C_STATUS, C_PROG), ("time_left", "Tempo restante", C_ETA, C_ETA_N),
            ("rate", "Velocidade", C_RATE, C_RATE_N), ("last_try", "Última tentativa", C_LAST, C_LAST_N),
            ("description", "Descrição", C_DESC, C_DESC)]
 
@@ -43,6 +48,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.filter_key = "all"
         self.search_text = ""
         self.last_clip = ""
+        self.tree_rows: dict[str, Gtk.TreeIter] = {}
         set_language(self.s["language"])
         try:
             self.set_icon_from_file(ICON)
@@ -50,18 +56,24 @@ class MainWindow(Gtk.ApplicationWindow):
             self.set_icon_name("folder-download")
         wcfg = self.s["window"]
         self.set_default_size(wcfg.get("width", 1000), wcfg.get("height", 600))
+        theme.style(self, "ldm")
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(vbox)
-        vbox.pack_start(self._build_menu(), False, False, 0)
-        vbox.pack_start(self._build_toolbar(), False, False, 0)
+        self.set_titlebar(self._build_header())
+        self.searchbar = Gtk.SearchBar(show_close_button=True)
+        self.search = Gtk.SearchEntry(placeholder_text=_("Pesquisar por nome, descrição ou endereço"), width_chars=40)
+        self.search.connect("search-changed", self._on_search)
+        self.searchbar.add(self.search)
+        self.searchbar.connect_entry(self.search)
+        vbox.pack_start(self.searchbar, False, False, 0)
         self.paned = Gtk.Paned()
-        self.paned.set_position(wcfg.get("paned", 200))
+        self.paned.set_position(max(250, wcfg.get("paned", 250)))
         vbox.pack_start(self.paned, True, True, 0)
         self.paned.pack1(self._build_tree(), False, False)
         self.paned.pack2(self._build_list(), True, False)
-        self.statusbar = Gtk.Label(xalign=0, margin=4)
-        vbox.pack_start(self.statusbar, False, False, 0)
+        vbox.pack_start(self._build_footer(), False, False, 0)
+        self._spark_t = 0.0
 
         # Arrastar e soltar links (o "drop target" do IDM)
         self.drag_dest_set(Gtk.DestDefaults.ALL, [], Gdk.DragAction.COPY | Gdk.DragAction.LINK)
@@ -98,7 +110,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def _build_menu(self):
         self.accel = Gtk.AccelGroup()
         self.add_accel_group(self.accel)
-        bar = Gtk.MenuBar()
+        bar = Gtk.Menu()                      # aberto pelo botão ⋮ da barra de título
         t = self._submenu(bar, "_Tarefas")
         self._mi(t, "Adicionar URL", self.add_url, "<Control>n")
         self._mi(t, "Baixar vídeo de uma página", lambda: V.ask_video_url(self), "<Control><Shift>v")
@@ -132,24 +144,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self._mi(d, "Pausar todos", self.m.pause_all)
         self._mi(d, "Retomar todos", self.m.start_all)
         self._mi(d, "Excluir concluídos", self.delete_completed)
-        self._mi(d, "Pesquisar", lambda: self.search.grab_focus(), "<Control>f")
+        self._mi(d, "Pesquisar", self._toggle_search, "<Control>f")
         d.append(Gtk.SeparatorMenuItem())
         self._mi(d, "Agendador", self.scheduler)
         self._mi(d, "Iniciar fila", lambda: self.m.start_queue(self._current_queue()))
         self._mi(d, "Parar fila", lambda: self.m.stop_queue(self._current_queue()))
         d.append(Gtk.SeparatorMenuItem())
-        lm = Gtk.Menu()
-        li = self._mi(d, "Limitador de velocidade")
-        li.set_submenu(lm)
-        self._mi(lm, "Ligar", lambda: self.set_limiter(True))
-        self._mi(lm, "Desligar", lambda: self.set_limiter(False))
-        self._mi(lm, "Configurações...", lambda: D.speed_limiter_dialog(self))
+        self.limiter_item = Gtk.CheckMenuItem(label=_("Limitador de velocidade ligado"), active=self.s["speed_limiter_on"])
+        self.limiter_item.connect("toggled", lambda w: self.set_limiter(w.get_active()))
+        d.append(self.limiter_item)
+        self._mi(d, "Configurar limitador...", lambda: D.speed_limiter_dialog(self))
         d.append(Gtk.SeparatorMenuItem())
         self._mi(d, "Opções", self.options)
 
         v = self._submenu(bar, "_Exibir")
         self.hide_cats = Gtk.CheckMenuItem(label="Ocultar categorias")
-        self.hide_cats.connect("toggled", lambda w: self.tree_sw.set_visible(not w.get_active()))
+        self.hide_cats.connect("toggled", lambda w: self.tree_box.set_visible(not w.get_active()))
         v.append(self.hide_cats)
         self.dark_item = Gtk.CheckMenuItem(label=_("Modo escuro"), active=self.s["dark_mode"])
         self.dark_item.connect("toggled", self._toggle_dark)
@@ -173,85 +183,171 @@ class MainWindow(Gtk.ApplicationWindow):
         self._mi(h, "Adicionar ao menu de aplicativos", self.install_menu)
         h.append(Gtk.SeparatorMenuItem())
         self._mi(h, "Sobre o LDM", self.about)
+        bar.show_all()
         return bar
 
-    def _tool(self, tb, icon, label, cb, tip=None):
-        b = Gtk.ToolButton(icon_name=icon, label=_(label))
-        b.set_is_important(True)
-        b.set_tooltip_text(tip or _(label))
+    def _button(self, label, cb, css, icon=None, tip=None):
+        b = Gtk.Button(label=_(label)) if label else Gtk.Button()
+        if icon:
+            b.set_image(Gtk.Image.new_from_icon_name(icon, Gtk.IconSize.BUTTON))
+            b.set_always_show_image(True)
+        b.set_tooltip_text(_(tip or label))
         b.connect("clicked", lambda *_: cb())
-        tb.insert(b, -1)
+        theme.style(b, css)
         return b
 
-    def _build_toolbar(self):
-        tb = Gtk.Toolbar()
-        tb.set_style(Gtk.ToolbarStyle.BOTH)
-        tb.get_style_context().add_class("primary-toolbar")
-        self._tool(tb, "list-add", "Adicionar URL", self.add_url)
-        self._tool(tb, "video-x-generic", "Baixar vídeo", lambda: V.ask_video_url(self))
-        self._tool(tb, "media-playback-start", "Retomar", self.resume_sel)
-        self._tool(tb, "media-playback-pause", "Parar", self.stop_sel)
-        self._tool(tb, "media-playback-stop", "Parar todos", self.m.pause_all)
-        self._tool(tb, "edit-delete", "Excluir", self.delete_sel)
-        self._tool(tb, "edit-clear-all", "Excluir concluídos", self.delete_completed)
-        tb.insert(Gtk.SeparatorToolItem(), -1)
-        self._tool(tb, "preferences-system", "Opções", self.options)
-        self._tool(tb, "alarm-symbolic" if Gtk.IconTheme.get_default().has_icon("alarm-symbolic") else "appointment-new",
-                   "Agendador", self.scheduler)
-        self._tool(tb, "go-next", "Iniciar fila", lambda: self.m.start_queue(self._current_queue()))
-        self._tool(tb, "process-stop", "Parar fila", lambda: self.m.stop_queue(self._current_queue()))
-        self.limiter_btn = Gtk.ToggleToolButton(icon_name="speedometer" if Gtk.IconTheme.get_default().has_icon("speedometer") else "network-wireless",
-                                                label=_("Limitador de velocidade"))
-        self.limiter_btn.set_is_important(True)
-        self.limiter_btn.set_active(self.s["speed_limiter_on"])
+    def _build_header(self):
+        hb = Gtk.HeaderBar(show_close_button=True)
+        hb.set_title("")
+        hb.set_decoration_layout(":minimize,maximize,close")   # o logo já está na barra
+        brand = Gtk.Box(spacing=8)
+        try:
+            from gi.repository import GdkPixbuf
+            brand.pack_start(Gtk.Image.new_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(ICON, 28, 28)), False, False, 0)
+        except Exception:  # noqa: BLE001
+            pass
+        brand.pack_start(theme.style(Gtk.Label(label="LDM"), "ldm-title"), False, False, 0)
+        brand.pack_start(theme.style(Gtk.Label(label=APP_NAME), "ldm-subtitle"), False, False, 0)
+        hb.pack_start(brand)
+
+        has = Gtk.IconTheme.get_default().has_icon
+        self.menu_btn = Gtk.MenuButton(popup=self._build_menu(), tooltip_text=_("Menu"))
+        if has("open-menu-symbolic"):
+            self.menu_btn.set_image(Gtk.Image.new_from_icon_name("open-menu-symbolic", Gtk.IconSize.BUTTON))
+        else:
+            self.menu_btn.set_label("⋮")
+        theme.style(self.menu_btn, "ldm-ghost")
+        hb.pack_end(self.menu_btn)
+        self.search_btn = Gtk.ToggleButton(tooltip_text=_("Pesquisar (Ctrl+F)"))
+        if has("system-search-symbolic"):
+            self.search_btn.set_image(Gtk.Image.new_from_icon_name("system-search-symbolic", Gtk.IconSize.BUTTON))
+        else:
+            self.search_btn.set_label("🔍")
+        self.search_btn.connect("toggled", lambda b: self.searchbar.set_search_mode(b.get_active()))
+        theme.style(self.search_btn, "ldm-ghost")
+        hb.pack_end(self.search_btn)
+        self.limiter_btn = Gtk.ToggleButton(tooltip_text=_("Limitador de velocidade"), active=self.s["speed_limiter_on"])
+        self.limiter_btn.set_image(Gtk.Image.new_from_icon_name(theme.icon("speedometer"), Gtk.IconSize.BUTTON))
         self.limiter_btn.connect("toggled", lambda b: self.set_limiter(b.get_active()))
-        tb.insert(self.limiter_btn, -1)
-        self._tool(tb, "network-server", "Grabber", self.grabber)
-        sp = Gtk.SeparatorToolItem(draw=False)
-        sp.set_expand(True)
-        tb.insert(sp, -1)
-        ti = Gtk.ToolItem()
-        self.search = Gtk.SearchEntry(placeholder_text=_("Pesquisar"))
-        self.search.connect("search-changed", self._on_search)
-        ti.add(self.search)
-        tb.insert(ti, -1)
-        return tb
+        theme.style(self.limiter_btn, "ldm-ghost")
+        hb.pack_end(self.limiter_btn)
+        hb.pack_end(self._button("Pausar tudo", self.m.pause_all, "ldm-ghost", tip="Pausar todos os downloads"))
+        hb.pack_end(self._button("★ Vídeo", lambda: V.ask_video_url(self), "ldm-video",
+                                 tip="Baixar o vídeo de uma página (Ctrl+Shift+V)"))
+        hb.pack_end(self._button("+ URL", self.add_url, "ldm-primary", tip="Adicionar URL (Ctrl+N)"))
+        hb.show_all()
+        return hb
+
+    def _toggle_search(self):
+        self.search_btn.set_active(not self.search_btn.get_active())
+        if self.search_btn.get_active():
+            self.search.grab_focus()
+
+    def _build_footer(self):
+        box = theme.style(Gtk.Box(spacing=22), "ldm-footer")
+        self.spark = Sparkline()
+        box.pack_start(self.spark, True, True, 0)
+
+        def stat(title, css):
+            v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER)
+            v.pack_start(theme.style(Gtk.Label(label=_(title).upper(), xalign=0), "ldm-stat-label", "ldm-mono"), False, False, 0)
+            val = theme.style(Gtk.Label(xalign=0), css, "ldm-mono")
+            v.pack_start(val, False, False, 0)
+            box.pack_start(v, False, False, 0)
+            return val
+
+        self.stat_speed = stat("Velocidade global", "ldm-stat-speed")
+        self.stat_conns = stat("Conexões totais", "ldm-stat-value")
+        self.stat_count = stat("Downloads ativos", "ldm-stat-value")
+        return box
 
     def _build_tree(self):
-        self.tstore = Gtk.TreeStore(str, str, str)   # chave, rótulo, ícone
-        self.ttv = Gtk.TreeView(model=self.tstore, headers_visible=False)
+        self.tstore = Gtk.TreeStore(str, str, str, str)   # chave, rótulo, ícone, contador
+        self.ttv = Gtk.TreeView(model=self.tstore, headers_visible=False, activate_on_single_click=True)
         col = Gtk.TreeViewColumn()
-        ri = Gtk.CellRendererPixbuf()
-        rt = Gtk.CellRendererText()
+        ri = Gtk.CellRendererPixbuf(xpad=4)
+        rt = Gtk.CellRendererText(ypad=5, ellipsize=3)
+        rc = Gtk.CellRendererText(xalign=1, xpad=8, font=theme.MONO_FONT.split(",")[0] + " 9")
+        col.set_expand(True)
         col.pack_start(ri, False)
         col.pack_start(rt, True)
+        col.pack_start(rc, False)
         col.add_attribute(ri, "icon-name", 2)
         col.add_attribute(rt, "text", 1)
+        col.add_attribute(rc, "text", 3)
+        col.set_cell_data_func(rt, self._tree_cell_color)
+        col.set_cell_data_func(rc, self._tree_count_color)
         self.ttv.append_column(col)
-        self.ttv.get_selection().connect("changed", self._on_tree_sel)
+        self._tree_sel_handler = self.ttv.get_selection().connect("changed", self._on_tree_sel)
         self.refresh_tree()
-        self.tree_sw = Gtk.ScrolledWindow(min_content_width=170)
+        self.tree_sw = Gtk.ScrolledWindow(min_content_width=240, hscrollbar_policy=Gtk.PolicyType.NEVER)
         self.tree_sw.add(self.ttv)
-        return self.tree_sw
+        self.tree_box = theme.style(Gtk.Box(), "ldm-sidebar")
+        self.tree_box.pack_start(self.tree_sw, True, True, 0)
+        return self.tree_box
+
+    @staticmethod
+    def _tree_cell_color(_col, cell, model, it, _data):
+        cell.set_property("foreground", theme.VIDEO if model[it][0] == "videos" else None)
+
+    @staticmethod
+    def _tree_count_color(_col, cell, model, it, _data):
+        key = model[it][0]
+        color = {"videos": theme.VIDEO, "finished": theme.SUCCESS, "unfinished": theme.PRIMARY}.get(key, theme.tokens()["muted"])
+        cell.set_property("foreground", color)
 
     def refresh_tree(self):
+        sel = self.ttv.get_selection()
+        sel.handler_block(self._tree_sel_handler)     # reconstruir não pode mudar o filtro nem abrir o Grabber
+        try:
+            self._fill_tree()
+        finally:
+            sel.handler_unblock(self._tree_sel_handler)
+
+    def _fill_tree(self):
         self.tstore.clear()
+        self.tree_rows = {}
         cats = [c["name"] for c in self.s["categories"]]
-        for key, label, icon in (("all", "Todos os downloads", "folder"), ("unfinished", "Incompletos", "folder-download"),
+        for key, label, icon in (("all", "Todos os downloads", "folder"), ("unfinished", "Em andamento", "folder-download"),
                                  ("finished", "Concluídos", "folder-documents")):
-            parent = self.tstore.append(None, [key, _(label), icon])
+            parent = self.tree_rows[key] = self.tstore.append(None, [key, _(label), theme.icon(icon), ""])
             for c in cats:
-                self.tstore.append(parent, [f"{key}:{c}", _(c), "folder"])
-            self.tstore.append(parent, [f"{key}:Geral", _("Geral"), "folder"])
-        qp = self.tstore.append(None, ["queues", _("Filas"), "view-list-symbolic"])
+                self.tstore.append(parent, [f"{key}:{c}", _(c), theme.icon("folder"), ""])
+            self.tstore.append(parent, [f"{key}:Geral", _("Geral"), theme.icon("folder"), ""])
+        self.tree_rows["videos"] = self.tstore.append(None, ["videos", _("Vídeos capturados"), theme.icon("video-x-generic"), ""])
+        qp = self.tree_rows["queues"] = self.tstore.append(None, ["queues", _("Filas"), theme.icon("view-list-symbolic"), ""])
         for q in self.m.queues.values():
-            self.tstore.append(qp, [f"queue:{q['id']}", q["name"] + ("  ▶" if q["running"] else ""), "view-list"])
-        self.tstore.append(None, ["grabber", _("Projetos do Grabber"), "network-server"])
-        self.ttv.expand_row(Gtk.TreePath(0), False)
-        self.ttv.expand_row(Gtk.TreePath(3), False)
+            self.tstore.append(qp, [f"queue:{q['id']}", q["name"] + ("  ▶" if q["running"] else ""), theme.icon("view-list"), ""])
+        self.tstore.append(None, ["grabber", _("Projetos do Grabber"), theme.icon("network-server"), ""])
+        self.ttv.expand_row(Gtk.TreePath(4), False)
+        self._update_counts()
+        self._select_tree_key(self.filter_key)
+
+    def _select_tree_key(self, key):
+        def visit(model, path, it):
+            if model[it][0] == key:
+                if path.get_depth() > 1:
+                    parent = path.copy()
+                    parent.up()
+                    self.ttv.expand_to_path(parent)
+                self.ttv.get_selection().select_iter(it)
+                return True
+            return False
+        self.tstore.foreach(visit)
+
+    def _update_counts(self):
+        items = list(self.m.items.values())
+        counts = {"all": len(items), "unfinished": sum(1 for i in items if i["status"] != ST_COMPLETE),
+                  "finished": sum(1 for i in items if i["status"] == ST_COMPLETE),
+                  "videos": sum(1 for i in items if i.get("kind") in ("video", "hls")),
+                  "queues": sum(len(q["items"]) for q in self.m.queues.values())}
+        for key, n in counts.items():
+            row = self.tree_rows.get(key)
+            if row is not None and self.tstore.get_value(row, 3) != str(n):
+                self.tstore.set_value(row, 3, str(n))
 
     def _build_list(self):
-        self.store = Gtk.ListStore(str, str, str, str, str, str, str, str, str, float, float, int, float, float, float)
+        self.store = Gtk.ListStore(str, str, str, str, str, str, str, str, str, float, float, int, float, float, float, str)
         self.filtered = self.store.filter_new()
         self.filtered.set_visible_func(self._visible)
         self.sorted = Gtk.TreeModelSort(model=self.filtered)
@@ -261,22 +357,30 @@ class MainWindow(Gtk.ApplicationWindow):
         self.tv.connect("row-activated", self._on_activate)
         self.tv.connect("button-press-event", self._on_button)
         self.columns = {}
+        mono = theme.MONO_FONT.split(",")[0] + " 9.5"
         for key, title, text_col, sort_col in COLUMNS:
             if key == "status":
-                r = Gtk.CellRendererProgress()
-                c = Gtk.TreeViewColumn(_(title), r, value=C_PROG, text=C_STATUS)
-                c.set_min_width(130)
+                r = SegmentCell(self.segment_info)
+                c = Gtk.TreeViewColumn(_(title).upper(), r)
+                c.add_attribute(r, "iid", C_ID)
+                c.set_min_width(200)
+                c.set_expand(True)
             elif key == "name":
-                c = Gtk.TreeViewColumn(_(title))
-                ri, rt = Gtk.CellRendererPixbuf(), Gtk.CellRendererText(ellipsize=3)
+                c = Gtk.TreeViewColumn(_(title).upper())
+                ri, rt = Gtk.CellRendererPixbuf(xpad=6), Gtk.CellRendererText(ellipsize=3, ypad=6)
+                ri.set_property("stock-size", Gtk.IconSize.LARGE_TOOLBAR)
                 c.pack_start(ri, False)
                 c.pack_start(rt, True)
                 c.add_attribute(ri, "icon-name", C_ICON)
-                c.add_attribute(rt, "text", C_NAME)
+                c.add_attribute(rt, "markup", C_MARKUP)
                 c.set_expand(True)
-                c.set_min_width(220)
+                c.set_min_width(260)
             else:
-                c = Gtk.TreeViewColumn(_(title), Gtk.CellRendererText(ellipsize=3), text=text_col)
+                r = Gtk.CellRendererText(ellipsize=3, font=mono, xpad=6)
+                c = Gtk.TreeViewColumn(_(title).upper(), r, text=text_col)
+                c.set_cell_data_func(r, self._rate_color if key == "rate" else self._muted_color if key == "last_try" else None)
+                if key == "size":
+                    c.set_min_width(175)
             c.set_resizable(True)
             c.set_sort_column_id(sort_col)
             c.set_visible(key in self.s["columns_visible"])
@@ -285,7 +389,44 @@ class MainWindow(Gtk.ApplicationWindow):
         self.sorted.set_sort_column_id(C_ADDED, Gtk.SortType.ASCENDING)
         sw = Gtk.ScrolledWindow()
         sw.add(self.tv)
-        return sw
+        return theme.style(sw, "ldm-list")
+
+    @staticmethod
+    def _muted_color(_col, cell, _model, _tit, _data):
+        cell.set_property("foreground", theme.tokens()["muted"])
+
+    def _rate_color(self, _col, cell, model, tit, _data):
+        it = self.m.items.get(model[tit][C_ID], {})
+        cell.set_property("foreground", theme.VIDEO if it.get("kind") in ("video", "hls") else theme.PRIMARY)
+
+    def segment_info(self, iid):
+        """Dados da linha viva: (segmentos, total, cor, completo, rótulo, percentual)."""
+        it = self.m.items.get(iid)
+        if not it:
+            return None
+        size = it.get("size") or -1
+        video = it.get("kind") in ("video", "hls")
+        color = theme.VIDEO if video else theme.PRIMARY
+        st = it["status"]
+        if st == ST_COMPLETE:
+            return [], size, theme.SUCCESS, True, _("Concluído"), "100%"
+        d = self.m.active.get(iid)
+        try:
+            segs = d.segment_map() if d else [(a, p, b) for a, b, p in it.get("segments") or [] if b is not None]
+        except Exception:  # noqa: BLE001
+            segs = []
+        done = self.m.runtime.get(iid, {}).get("downloaded", it.get("downloaded", 0)) if d else it.get("downloaded", 0)
+        if not segs and size > 0 and done:
+            segs = [(0, min(done, size), size - 1)]
+        pct = f"{done * 100 / size:.1f}%" if size > 0 else ""
+        if st == ST_ERROR:
+            return segs, size, theme.ERROR, False, self.status_text(it)[:70], pct
+        if d:
+            conns = len(self.m.runtime.get(iid, {}).get("connections", []))
+            label = _("Conectando...") if st == ST_CONNECTING else (f"{conns} " + _("conexões ativas") if conns > 1 else _("Baixando"))
+        else:
+            label = STATUS_TXT.get(st, st)
+        return segs, size, color, False, label, pct
 
     # ------------------------------------------------------------------ linhas
     @staticmethod
@@ -317,17 +458,37 @@ class MainWindow(Gtk.ApplicationWindow):
             status = "Conectando..."
         lt = it.get("last_try") or it.get("completed_at") or 0
         eta = rt.get("eta")
-        return {C_ICON: self._icon_for(it["filename"]), C_NAME: it["filename"], C_SIZE: util.fmt_size(size),
+        size_txt = util.fmt_size(size)
+        if active and size > 0:
+            size_txt = f"{util.fmt_size(done)} / {size_txt}"
+        return {C_ICON: self._icon_for(it["filename"]), C_NAME: it["filename"], C_SIZE: size_txt,
                 C_STATUS: status, C_ETA: util.fmt_eta(eta) if active else "",
                 C_RATE: util.fmt_rate(rt.get("rate")) if active else "",
                 C_LAST: time.strftime("%d/%m/%Y %H:%M", time.localtime(lt)) if lt else "",
                 C_DESC: it.get("description", ""), C_SIZE_N: float(size), C_ADDED: float(it.get("added", 0)),
                 C_PROG: prog, C_LAST_N: float(lt), C_RATE_N: float(rt.get("rate") or 0),
-                C_ETA_N: float(eta if eta is not None else 1e12)}
+                C_ETA_N: float(eta if eta is not None else 1e12), C_MARKUP: self._name_markup(it, rt)}
+
+    def _name_markup(self, it, rt):
+        esc = GLib.markup_escape_text
+        host = urlparse(it.get("url", "")).hostname or ""
+        parts = [host.removeprefix("www.")] if host else []
+        video = it.get("kind") in ("video", "hls")
+        if video:
+            parts.append(_("Vídeo") + (f" · {it['video'].get('quality')}" if isinstance(it.get("video"), dict) and it["video"].get("quality") else ""))
+        conns = len(rt.get("connections", [])) if rt else 0
+        if conns > 1:
+            parts.append(f"{conns} " + _("conexões ativas"))
+        if it.get("description") and not video:
+            parts.append(it["description"][:60])
+        color = theme.SUCCESS if it["status"] == ST_COMPLETE else (theme.VIDEO if video else theme.tokens()["muted"])
+        dot = f'<span foreground="{theme.VIDEO}">●</span> ' if video else ""
+        return (f"{dot}<b>{esc(it['filename'])}</b>\n"
+                f'<span size="small" foreground="{color}">{esc(" • ".join(parts))}</span>')
 
     def _append_row(self, it):
         vals = self._row_values(it)
-        row = [it["id"]] + [vals[i] for i in range(1, 15)]
+        row = [it["id"]] + [vals[i] for i in range(1, N_COLS)]
         self.rows[it["id"]] = self.store.append(row)
 
     def _update_row(self, iid):
@@ -362,6 +523,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if key.startswith("queue:"):
             q = self.m.queues.get(key[6:])
             return bool(q) and iid in q["items"]
+        if key == "videos":
+            return it.get("kind") in ("video", "hls")
         if key in ("queues", "grabber"):
             return key == "grabber" and bool(it.get("grabber"))
         base, _sep, cat = key.partition(":")
@@ -400,9 +563,17 @@ class MainWindow(Gtk.ApplicationWindow):
             self._update_row(iid)
         self.filtered.refilter() if self.search_text or self.filter_key != "all" else None
         total_rate = sum(r.get("rate", 0) for i, r in self.m.runtime.items() if i in self.m.active)
-        lim = f" · Limitador: {self.s['speed_limit_kbps']} KB/s" if self.s["speed_limiter_on"] else ""
-        self.statusbar.set_text(f"{len(self.m.items)} downloads · {len(self.m.active)} ativos · "
-                                f"{util.fmt_rate(total_rate) or '0 B/s'}{lim}")
+        conns = sum(len(r.get("connections", [])) for i, r in self.m.runtime.items() if i in self.m.active)
+        lim = f"  (≤ {self.s['speed_limit_kbps']} KB/s)" if self.s["speed_limiter_on"] else ""
+        self.stat_speed.set_text((util.fmt_rate(total_rate) or "0 B/s") + lim)
+        self.stat_conns.set_text(f"{conns} " + _("conexões"))
+        self.stat_count.set_text(f"{len(self.m.active)} " + _("de") + f" {len(self.m.items)}")
+        now = time.monotonic()
+        if now - self._spark_t >= 1:
+            self._spark_t = now
+            self.spark.push(total_rate)
+            self._update_counts()
+        self.tv.queue_draw()
         if self.app.tray:
             self.app.tray.set_tooltip_text(f"{APP_NAME}\n{len(self.m.active)} ativos · {util.fmt_rate(total_rate) or '0 B/s'}")
         return True
@@ -642,8 +813,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def set_limiter(self, on):
         self.m.apply_speed_limit(on)
-        if self.limiter_btn.get_active() != on:
-            self.limiter_btn.set_active(on)
+        for w in (self.limiter_btn, self.limiter_item):
+            if w.get_active() != on:
+                w.set_active(on)
 
     def export(self, fmt):
         ids = self.selected_ids() or list(self.m.items)
@@ -713,10 +885,10 @@ class MainWindow(Gtk.ApplicationWindow):
                             comments="Clone para Linux das funções do Internet Download Manager 6.43:\n"
                                      "downloads multi-conexão com segmentação dinâmica, filas, agendador,\n"
                                      "limitador de velocidade, Site Grabber, captura do navegador e HLS.",
-                            license_type=Gtk.License.MIT_X11, logo_icon_name="folder-download")
+                            license_type=Gtk.License.MIT_X11, website="https://github.com/jcrodriguesjr0/linux-download-manager")
         try:
             from gi.repository import GdkPixbuf
-            a.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(ICON, 96, 96))
+            a.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(ICON, 112, 112))
         except Exception:  # noqa: BLE001
             pass
         a.run()
@@ -766,9 +938,11 @@ class MainWindow(Gtk.ApplicationWindow):
         message(self, "Idioma alterado. Reinicie o LDM para aplicar em toda a interface.")
 
     def apply_settings(self, initial=False):
-        Gtk.Settings.get_default().props.gtk_application_prefer_dark_theme = bool(self.s["dark_mode"])
+        theme.apply(self.s["dark_mode"])
         self.app.update_tray()
         self.refresh_tree()
+        for it in self.m.items.values():      # cores do subtítulo dependem do tema
+            self._update_row(it["id"])
         if not initial:
             self.m.apply_speed_limit(self.s["speed_limiter_on"])
 
@@ -814,6 +988,8 @@ class LdmApp(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
         GLib.set_prgname("ldm")
+        theme.register_fonts()
+        theme.install_icons()
         self.m = Manager()
         self.m.run()
         from .. import autostart
@@ -848,7 +1024,7 @@ class LdmApp(Gtk.Application):
             with _no_deprecation():
                 self.tray = Gtk.StatusIcon()
                 try:
-                    self.tray.set_from_file(ICON)
+                    self.tray.set_from_file(theme.TRAY)
                 except Exception:  # noqa: BLE001
                     self.tray.set_from_icon_name("folder-download")
                 self.tray.set_title(APP_NAME)

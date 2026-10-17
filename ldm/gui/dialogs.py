@@ -12,6 +12,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 
 from .. import net  # noqa: E402
+from . import theme  # noqa: E402
 from ..engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING  # noqa: E402
 from ..util import (batch_urls, ext_of, filename_from_headers, fmt_eta, fmt_rate, fmt_size,  # noqa: E402
                     looks_like_url, match_ext)
@@ -181,7 +182,7 @@ class SegmentMap(Gtk.DrawingArea):
 
     def __init__(self):
         super().__init__()
-        self.set_size_request(-1, 22)
+        self.set_size_request(-1, 16)
         self.segs, self.total = [], 0
         self.connect("draw", self._draw)
 
@@ -191,19 +192,7 @@ class SegmentMap(Gtk.DrawingArea):
 
     def _draw(self, w, cr):
         a = w.get_allocation()
-        cr.set_source_rgb(0.85, 0.85, 0.85)
-        cr.rectangle(0, 0, a.width, a.height)
-        cr.fill()
-        if self.total <= 0:
-            return
-        k = a.width / self.total
-        for start, pos, end in self.segs:
-            cr.set_source_rgb(0.18, 0.49, 0.85)
-            cr.rectangle(start * k, 0, max(1, (pos - start) * k), a.height)
-            cr.fill()
-            cr.set_source_rgb(0.1, 0.1, 0.1)
-            cr.rectangle(start * k, 0, 1, a.height)
-            cr.fill()
+        theme.draw_segments(cr, 0, 0, a.width, a.height, self.segs, self.total)
 
 
 # ---------------------------------------------------------------- Progresso
@@ -211,10 +200,18 @@ class ProgressWindow(Gtk.Window):
     def __init__(self, win, iid):
         super().__init__(title="Progresso do download", transient_for=None)
         self.w, self.m, self.iid = win, win.m, iid
-        self.set_default_size(560, -1)
-        self.set_icon_name("folder-download")
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin=10)
+        self.set_default_size(580, -1)
+        try:
+            self.set_icon_from_file(theme.LOGO)
+        except GLib.Error:
+            self.set_icon_name("folder-download")
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, margin=14)
         self.add(outer)
+        self.head_name = Gtk.Label(xalign=0, ellipsize=3)
+        self.head_name.get_style_context().add_class("ldm-title")
+        self.head_status = theme.style(Gtk.Label(xalign=0), "ldm-subtitle")
+        outer.pack_start(self.head_name, False, False, 0)
+        outer.pack_start(self.head_status, False, False, 0)
         nb = Gtk.Notebook()
         outer.pack_start(nb, True, True, 0)
 
@@ -224,11 +221,14 @@ class ProgressWindow(Gtk.Window):
                                     ("done", "Baixado"), ("rate", "Velocidade"), ("eta", "Tempo restante"),
                                     ("resume", "Retomada")]):
             self.lbl[k] = row(g, r, t + ":", Gtk.Label(xalign=0, ellipsize=3, selectable=True))
+            if k != "url":
+                theme.style(self.lbl[k], "ldm-mono")
         self.bar = Gtk.ProgressBar(show_text=True)
         g.attach(self.bar, 0, 8, 2, 1)
         self.segmap = SegmentMap()
         self.details = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        self.details.pack_start(Gtk.Label(label="Posições e progresso por conexão", xalign=0), False, False, 0)
+        self.details.pack_start(theme.style(Gtk.Label(label="MAPA DO MOTOR MULTI-CONEXÃO", xalign=0), "ldm-stat-label", "ldm-mono"),
+                                False, False, 0)
         self.details.pack_start(self.segmap, False, False, 0)
         self.conn_store = Gtk.ListStore(str, str, str)
         tv = Gtk.TreeView(model=self.conn_store)
@@ -261,9 +261,9 @@ class ProgressWindow(Gtk.Window):
         bb = Gtk.Box(spacing=6)
         self.hide_b = Gtk.Button(label="<< Ocultar detalhes")
         self.hide_b.connect("clicked", self._toggle_details)
-        self.pause_b = Gtk.Button(label="Pausar")
+        self.pause_b = theme.style(Gtk.Button(label="Pausar"), "ldm-ghost")
         self.pause_b.connect("clicked", self._pause_resume)
-        cancel_b = Gtk.Button(label="Cancelar")
+        cancel_b = theme.style(Gtk.Button(label="Cancelar"), "ldm-ghost")
         cancel_b.connect("clicked", lambda _: (self.m.pause(iid), self.destroy()))
         bb.pack_start(self.hide_b, False, False, 0)
         bb.pack_end(cancel_b, False, False, 0)
@@ -303,6 +303,9 @@ class ProgressWindow(Gtk.Window):
         size = it.get("size") or -1
         done = rt.get("downloaded", it.get("downloaded", 0)) if self.iid in self.m.active else it.get("downloaded", 0)
         self.set_title(f"{int(done * 100 / size) if size > 0 else 0}% {it['filename']}")
+        self.head_name.set_text(it["filename"])
+        conns = len(rt.get("connections", [])) if self.iid in self.m.active else 0
+        self.head_status.set_text(self.w.status_text(it) + (f" · {conns} conexões simultâneas ativas" if conns > 1 else ""))
         self.lbl["url"].set_text(it["url"])
         self.lbl["status"].set_text(self.w.status_text(it))
         self.lbl["size"].set_text(fmt_size(size) or "(desconhecido)")

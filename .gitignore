@@ -4,5 +4,3 @@ dist/
 build/
 *.AppImage
 browser_extension.zip
-# ícones do tema WhiteSur (GPL-3.0, de terceiros): só referência local
-identidade_visual/icones_sistema/

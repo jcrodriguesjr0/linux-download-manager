@@ -234,7 +234,7 @@ async function rememberMedia(tabId, m) {
     const visible = list.filter((x) => x.kind !== "sabr").length;
     try {
       await B.action.setBadgeText({ tabId, text: visible ? String(Math.min(visible, 99)) : "" });
-      await B.action.setBadgeBackgroundColor({ tabId, color: "#0b5fc4" });
+      await B.action.setBadgeBackgroundColor({ tabId, color: "#F43F5E" });
     } catch (_) {}
   }).catch(() => {});
   mediaQueue.set(tabId, next);

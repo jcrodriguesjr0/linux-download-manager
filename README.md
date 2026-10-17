@@ -4,21 +4,21 @@
 
 A download manager for Linux inspired by Internet Download Manager. It speeds up downloads with multiple connections, grabs videos from any website through a browser extension, and includes queues, a scheduler, a speed limiter and a site grabber.
 
-![Main window](identidade_visual/telas/appimage_main.png)
+![Main window](docs/screenshots/main-dark.png)
 
 > The interface is in Brazilian Portuguese. English covers menus and columns only.
 
 ## Download
 
-**[⬇ Linux_Download_Manager-1.2.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, single file, nothing to install)
+**[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, single file, nothing to install)
 
 It bundles Python 3.12, GTK 3, yt-dlp, Deno and ffmpeg. It runs on any x86_64 Linux with glibc ≥ 2.39: SteamOS, Ubuntu 24.04+, Fedora 40+, Arch.
 
 ```bash
-chmod +x Linux_Download_Manager-1.2.0-x86_64.AppImage
-./Linux_Download_Manager-1.2.0-x86_64.AppImage            # open the program
-./Linux_Download_Manager-1.2.0-x86_64.AppImage install    # add it to the application menu
-./Linux_Download_Manager-1.2.0-x86_64.AppImage selftest   # check the bundled components
+chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage
+./Linux_Download_Manager-1.3.0-x86_64.AppImage            # open the program
+./Linux_Download_Manager-1.3.0-x86_64.AppImage install    # add it to the application menu
+./Linux_Download_Manager-1.3.0-x86_64.AppImage selftest   # check the bundled components
 ```
 
 Then install the browser extension (see below).
@@ -63,10 +63,15 @@ Then install the browser extension (see below).
 - Crawl a site by link depth, file types, paths and size, and save projects.
 
 **Desktop integration**
-- Tray icon, optional start at login (minimized), dark mode.
+- Tray icon, optional start at login (minimized).
+- Dark-first "Segmented Flow" design with light mode, own icon set and bundled Inter / JetBrains Mono fonts. Assets live in `identidade_visual/`.
 - Notifications and sounds; antivirus scan after a download.
 
-![Video grabber](identidade_visual/telas/videopassive.png) ![Progress](identidade_visual/telas/progress.png)
+| Video button on any player | Quality selection | Progress |
+|---|---|---|
+| ![Video button](docs/screenshots/video-button.png) | ![Video dialog](docs/screenshots/video.png) | ![Progress](docs/screenshots/progress.png) |
+
+Light mode: ![Light mode](docs/screenshots/main-light.png)
 
 ## Browser extension
 
@@ -154,6 +159,7 @@ python3 packaging/appimage/build_appimage.py      # output in dist/
 | [GTK 3](https://gtk.org/), GLib, PyGObject | LGPL-2.1+ |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
 | [Deno](https://deno.com/) | MIT |
+| [Inter](https://rsms.me/inter/), [JetBrains Mono](https://www.jetbrains.com/lp/mono/) fonts (`data/fonts`) | SIL OFL 1.1 |
 | [FFmpeg](https://ffmpeg.org/), static build by [John Van Sickle](https://johnvansickle.com/ffmpeg/) | GPL-3.0; source code at the links |
 
 ## License

@@ -1,6 +1,92 @@
-/* Botão "Baixar este vídeo" (browser_extension/content.js), dentro de um shadow DOM sobre o <video> */
-button{all:unset;font:600 12px/1 system-ui,sans-serif;background:rgba(11,95,196,.93);color:#fff;
-  border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:6px 10px;cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px;white-space:nowrap}
-button:hover{background:#1a73e8}
-svg{width:14px;height:14px;flex:none}   /* ícone: seta.svg */
+/* ============================================================
+   Botão "Baixar Vídeo" (Linux Download Manager - LDM)
+   Injetado pelo content.js dentro de Shadow DOM sobre o <video>
+   ============================================================ */
+
+:host {
+  all: initial;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2147483647;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+.ldm-video-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(20, 22, 27, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 9999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  padding: 2px 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #f1f5f9;
+}
+
+.ldm-video-pill:hover {
+  background: rgba(26, 29, 36, 0.96);
+  border-color: #f59e0b;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.65), 0 0 16px rgba(245, 158, 11, 0.28);
+}
+
+.ldm-btn-main {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: #f1f5f9;
+  letter-spacing: 0.01em;
+}
+
+.ldm-btn-main:hover {
+  color: #ffffff;
+}
+
+.ldm-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+.ldm-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(245, 158, 11, 0.25);
+  margin: 0 2px;
+}
+
+.ldm-btn-quality {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ldm-btn-quality:hover {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.ldm-chevron {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}

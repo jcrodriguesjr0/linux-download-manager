@@ -1,48 +1,63 @@
-# Identidade visual do Linux Download Manager
+# Nova Identidade Visual do Linux Download Manager (LDM)
 
-Cópia de todas as imagens, cores e ícones que o programa e a extensão usam hoje. **É só referência:** o código continua lendo os originais (veja "Onde substituir").
+> **Status:** aplicada a partir da versão 1.3.0. No código, a paleta e o CSS estão em `ldm/gui/theme.py`, a "linha de download viva" em `ldm/gui/live.py`, o logo e os ícones em `data/` (`data/icons/ldm-*.svg`) e as fontes em `data/fonts/`. Capturas reais em [`docs/screenshots/`](../docs/screenshots/).
 
-## Pastas
+Este diretório contém a especificação e todos os arquivos vetoriais e rasterizados da **nova identidade visual** do **Linux Download Manager (LDM)**.
 
-| Pasta | Conteúdo | Original no projeto |
+A nova identidade afasta o LDM da estética de clone do IDM de 2005 e o transforma em um **aplicativo Linux moderno**, nativo para ambientes GNOME, KDE Plasma e SteamOS (Steam Deck).
+
+---
+
+## 💡 Conceito Central: "Fluxo Segmentado"
+O símbolo do LDM traduz visualmente a principal vantagem do software: **várias conexões simultâneas de rede convergindo em um único arquivo baixado na bandeja**.
+- Três canais verticais em degradê descem e se juntam unificados em uma seta voltada para a linha receptora de base.
+- O usuário entende o funcionamento veloz e multi-thread de forma instantânea sem precisar de textos explicativos.
+
+---
+
+## 🎨 Paleta Oficial Aprovada
+
+Pensada prioritariamente para tema escuro (*Dark Mode* / Steam Deck / KDE escuro):
+
+| Papel | Cor | Amostra | Uso |
+|---|---|:---:|---|
+| **Base** | `#141316` | Grafite Carbono | Fundo das janelas e diálogos |
+| **Superfície** | `#1E1A1E` | Grafite Suave | HeaderBar, painel lateral e cartões |
+| **Borda / Divisor** | `#382229` | Contorno Sutil | Separação de áreas e contorno do squircle |
+| **Primária (Download)** | `#F43F5E` | Vermelho Rubro / Crimson | Marca oficial, botões de ação e segmentos de download |
+| **Degradê da Marca** | `#FDA4AF` → `#FB7185` → `#F43F5E` → `#E11D48` | Degradê Rubro | Fluxos do logo e indicadores de alta velocidade |
+| **Destaque (Vídeo)** | `#F59E0B` | Âmbar Elétrico | Tudo relacionado a vídeo: botão sobre players, capturas e filtros |
+| **Sucesso** | `#22C55E` | Verde | Downloads concluídos e validação de hash |
+| **Erro** | `#EF4444` | Vermelho Alerta | Falhas de conexão ou links expirados |
+
+> **Nota de Design:** O âmbar separa com precisão as duas vocações do software: **Vermelho Rubro é Download**, **Âmbar é Vídeo**. O azul genérico do IDM 2005 foi totalmente substituído.
+
+---
+
+## 📁 Estrutura de Pastas e Recursos Criados
+
+| Pasta | Conteúdo e Formatos | Descrição |
 |---|---|---|
-| `logo/` | `ldm.svg` (128×128) e `ldm.png` | `data/` |
-| `extensao/` | `icon16/32/48/128.png` | `browser_extension/` |
-| `botao_video/` | `seta.svg` e `botao.css` do botão "Baixar este vídeo" | embutidos em `browser_extension/content.js` |
-| `icones_sistema/` | 21 ícones do tema do sistema (WhiteSur-light) usados na barra, na árvore e nas janelas. **Não vão para o Git** (tema GPL-3.0 de terceiros) | não fazem parte do projeto: o GTK pega do tema instalado |
-| `telas/` | capturas das janelas (principal, vídeo, progresso, opções, agendador, grabber, AppImage) | — |
-| `paleta.json` | todas as cores usadas | — |
+| **[`logo/`](logo/)** | `ldm.svg`, `ldm.png` (16, 32, 64, 128, 256, 512 px), `ldm-symbolic.svg`, `ldm-tray.png` | Logo do app em squircle GNOME/KDE e versão simbólica para a bandeja. |
+| **[`extensao/`](extensao/)** | `icon16.png`, `icon32.png`, `icon48.png`, `icon128.png`, `icon.svg` + versões monocromáticas | Ícones para navegadores (Chrome, Firefox, Brave) prontos para o `manifest.json`. |
+| **[`icones_sistema/`](icones_sistema/)** | 21 ícones em `.svg`, `.png` (24 px) e `@2x.png` (48 px) | Conjunto próprio de ícones de linha (traço 2px, grade 24px) que elimina o tema WhiteSur. |
+| **[`botao_video/`](botao_video/)** | `seta.svg`, `botao.css`, `preview.html` | Pílula escura semitransparente em vidro fosco com logo em âmbar injetada sobre players. |
+| **[`telas/`](telas/)** | `main.png`, `progress.png`, SVGs vetoriais dos mockups | Mockups da nova janela HeaderBar e da assinatura "Linha de Download Viva". |
+| **[`paleta.json`](paleta.json)** | JSON com definições completas | Tokens de cores, papéis semânticos e tipografia. |
 
-## Logo
-Círculo com gradiente vertical `#3fa0ff` → `#0b5fc4`, contorno `#08458f` de 4 px, seta para baixo branca e barra branca embaixo. É a cor de marca usada em todo o resto.
+---
 
-## Onde cada imagem aparece
-- **`data/ldm.svg`:**
-  - ícone do menu de aplicativos, do início automático e da AppImage (`ldm/autostart.py`, `packaging/appimage/build_appimage.py`);
-  - ícone da bandeja (`ldm/gui/app.py`, constante `ICON`).
-- **`data/ldm.png`:** `.DirIcon` da AppImage (miniatura no gerenciador de arquivos).
-- **`browser_extension/icon*.png`:** ícone da extensão e do botão na barra do navegador (`manifest.json`).
-- **Ícones do tema** (`icones_sistema/`, referenciados pelo nome):
+## 🛠️ Onde Substituir ao Aplicar no Projeto
 
-| Onde | Ícones |
-|---|---|
-| Barra de ferramentas | `list-add` (Adicionar URL), `video-x-generic` (Baixar vídeo), `media-playback-start` (Retomar), `media-playback-pause` (Parar), `media-playback-stop` (Parar todos), `edit-delete` (Excluir), `edit-clear-all` (Excluir concluídos), `preferences-system` (Opções), `alarm-symbolic`/`appointment-new` (Agendador), `go-next` (Iniciar fila), `process-stop` (Parar fila), `speedometer`/`network-wireless` (Limitador), `network-server` (Grabber) |
-| Árvore lateral | `folder`, `folder-download`, `folder-documents`, `view-list-symbolic`, `view-list`, `network-server` |
-| Janelas | `folder-download` (janela principal, progresso e "Sobre"; também é a reserva da bandeja), `video-x-generic` (janela de vídeo e miniatura) |
-| Lista de downloads | ícone por tipo de arquivo, vindo do sistema (`text-x-generic` como padrão) |
+Quando for reconstruir ou atualizar o código do LDM, utilize esta tabela prática:
 
-## Onde substituir ao reconstruir
-| Elemento | Arquivo/linha |
-|---|---|
-| Logo | trocar `data/ldm.svg` e `data/ldm.png` (mesmo nome) |
-| Ícones da extensão | trocar `browser_extension/icon*.png` (mesmos tamanhos) |
-| Botão sobre o vídeo | CSS e SVG em `browser_extension/content.js` (bloco `<style>`) |
-| Popup da extensão | variáveis `:root` em `browser_extension/popup.html` |
-| Badge da extensão | `setBadgeBackgroundColor` em `browser_extension/background.js` |
-| Mapa de conexões | `cr.set_source_rgb(...)` em `ldm/gui/dialogs.py` (classe do mapa) |
-| Ícones da barra/árvore | nomes em `ldm/gui/app.py` (`_build_toolbar`, `refresh_tree`) |
+| Elemento | Onde Substituir no Código | Arquivo da Nova Identidade |
+|---|---|---|
+| **Logo do AppImage e Menu** | `data/ldm.svg` e `data/ldm.png` | `logo/ldm.svg` e `logo/ldm.png` |
+| **Ícones da Extensão** | `browser_extension/icon*.png` | `extensao/icon*.png` |
+| **Botão Flutuante de Vídeo** | `browser_extension/content.js` (CSS e SVG inline) | `botao_video/botao.css` e `botao_video/seta.svg` |
+| **Popup da Extensão** | `:root` em `browser_extension/popup.html` | Variáveis de `paleta.json` |
+| **Badge da Extensão** | `setBadgeBackgroundColor` em `browser_extension/background.js` | Cor `#F43F5E` |
+| **Linha/Mapa de Conexões** | `cr.set_source_rgb(...)` em `ldm/gui/dialogs.py` | Cores de `mapa_de_conexoes` em `paleta.json` |
+| **Ícones da Barra e Árvore** | `ldm/gui/app.py` (`_build_toolbar`, `refresh_tree`) | Carregar ícones autorais de `icones_sistema/` |
 
-## Observações
-- **Logo do LDM fora das janelas.** As janelas e o "Sobre" usam o ícone genérico `folder-download` do tema, não o logo. Numa reconstrução, vale passar a usar o logo nesses lugares.
-- **Ícones do tema mudam de computador para computador.** Os de `icones_sistema/` são do tema WhiteSur (GPL-3.0) instalado neste Steam Deck; em outra máquina aparecem os do tema dela. Para uma identidade própria e fixa, crie ícones e carregue-os de `data/` em vez de usar nomes do tema.
-- **Modo escuro** usa a variante escura do tema GTK (`gtk_application_prefer_dark_theme`); não há CSS próprio no programa.
