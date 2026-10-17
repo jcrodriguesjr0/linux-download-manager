@@ -4,7 +4,7 @@
 Rodar numa distro Ubuntu 24.04 (ex.: distrobox) com: python3-gi python3-gi-cairo gir1.2-gtk-3.0
 librsvg2-common libgdk-pixbuf2.0-bin python3-pip.
 
-  python3 packaging/appimage/build_appimage.py [--work DIR] [--out DIR]
+  python3 linux/build_appimage.py [--work DIR] [--out DIR]
 
 Conteúdo: Python 3.12 + PyGObject/GTK 3 (bibliotecas do Ubuntu), yt-dlp[default,curl-cffi], Deno,
 ffmpeg/ffprobe estáticos e o código do LDM. Bibliotecas básicas do sistema (glibc, OpenGL, X11,
@@ -22,7 +22,7 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parents[2]
+PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 from ldm import VERSION  # noqa: E402
 
@@ -155,7 +155,7 @@ exec "$HERE/usr/bin/python3.12" -s "$HERE/usr/share/ldm/ldm.py" "$@"
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", default=str(PROJECT / "build" / "appimage"))
-    ap.add_argument("--out", default=str(PROJECT / "dist"))
+    ap.add_argument("--out", default=str(PROJECT / "linux" / "dist"))
     args = ap.parse_args()
     work, out = Path(args.work), Path(args.out)
     cache = work / "cache"
@@ -230,7 +230,7 @@ def main():
     log("código do LDM")
     share = usr / "share" / "ldm"
     for item in ("ldm", "data", "browser_extension"):
-        copytree_filtered(PROJECT / item, share / item, {"__pycache__"})
+        copytree_filtered(PROJECT / item, share / item, {"__pycache__", "dist"})
     shutil.copy2(PROJECT / "ldm.py", share / "ldm.py")
     icons = usr / "share/icons/hicolor/scalable/apps"
     icons.mkdir(parents=True)

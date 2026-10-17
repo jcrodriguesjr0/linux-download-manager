@@ -1,5 +1,5 @@
 ; Instalador do Lunix Download Manager (Inno Setup 6).
-; ISCC /DAppVersion=1.4.0 /DDistDir=...\build\win\dist\LDM /DOutDir=...\build\win\out /DIconFile=...\ldm.ico ldm.iss
+; ISCC /DAppVersion=1.4.0 /DDistDir=...\windows\build\dist\LDM /DOutDir=...\windows\build\out /DIconFile=...\ldm.ico ldm.iss
 #define AppName "Lunix Download Manager"
 
 [Setup]

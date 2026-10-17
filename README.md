@@ -197,7 +197,8 @@ ldm/grabber.py         site grabber
 ldm/server.py          local API for the extension and the CLI
 ldm/gui/               GTK 3 windows and dialogs
 browser_extension/     MV3 extension (Chrome/Edge/Firefox): video button, network sniffer, page hook
-packaging/appimage/    AppImage build script
+linux/                 Linux build: AppImage script (output in linux/dist/)
+windows/               Windows build: build.py, PyInstaller spec, Inno Setup script
 identidade_visual/     logo, icons, colors and screenshots
 tests/                 unit tests and an end-to-end browser test
 ```
@@ -215,10 +216,10 @@ python3 -m unittest discover -s tests -v
 On Ubuntu 24.04 (a distrobox works), with `python3-gi python3-gi-cairo gir1.2-gtk-3.0 librsvg2-common libgdk-pixbuf2.0-bin python3-pip`:
 
 ```bash
-python3 packaging/appimage/build_appimage.py      # output in dist/
+python3 linux/build_appimage.py      # output in linux/dist/
 ```
 
-**Windows:** built by GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup, then the installer is installed and smoke-tested on a Windows runner. Locally, in an MSYS2 UCRT64 shell: `python packaging/windows/build.py`.
+**Windows:** built by GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup, then the installer is installed and smoke-tested on a Windows runner. Locally, in an MSYS2 UCRT64 shell: `python windows/build.py` (output in `windows/build/`).
 
 ## Limitations
 

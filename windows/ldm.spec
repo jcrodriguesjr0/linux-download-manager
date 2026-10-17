@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 
-ROOT = Path(SPECPATH).resolve().parents[1]
+ROOT = Path(SPECPATH).resolve().parent
 STAGE = Path(os.environ["LDM_STAGE"])
 
 a = Analysis(

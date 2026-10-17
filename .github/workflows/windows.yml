@@ -34,10 +34,10 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Programa (PyInstaller) + yt-dlp, ffmpeg, deno
-        run: python packaging/windows/build.py
+        run: python windows/build.py
 
       - name: Diagnóstico do executável
-        run: build/win/dist/LDM/ldm-cli.exe selftest
+        run: windows/build/dist/LDM/ldm-cli.exe selftest
 
       - name: Instalador (Inno Setup)
         shell: pwsh
@@ -45,14 +45,14 @@ jobs:
           $ver = (Select-String -Path ldm/__init__.py -Pattern '^VERSION = "(.+)"').Matches[0].Groups[1].Value
           "LDM_VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$ver" "/DDistDir=$pwd\build\win\dist\LDM" `
-            "/DOutDir=$pwd\build\win\out" "/DIconFile=$pwd\build\win\stage\ldm.ico" packaging\windows\ldm.iss
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$ver" "/DDistDir=$pwd\windows\build\dist\LDM" `
+            "/DOutDir=$pwd\windows\build\out" "/DIconFile=$pwd\windows\build\stage\ldm.ico" windows\ldm.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Teste do instalado (instala, abre, API responde, captura de tela)
         shell: pwsh
         run: |
-          $out = "$pwd\build\win\out"
+          $out = "$pwd\windows\build\out"
           $setup = Get-ChildItem "$out\*-Setup.exe" | Select-Object -First 1
           Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/CURRENTUSER","/NORESTART" -Wait
           $exe = "$env:LOCALAPPDATA\Programs\Lunix Download Manager\LDM.exe"
@@ -83,5 +83,5 @@ jobs:
         if: always()
         with:
           name: lunix-download-manager-windows
-          path: build/win/out/*
+          path: windows/build/out/*
           if-no-files-found: warn

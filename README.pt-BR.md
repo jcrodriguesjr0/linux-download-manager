@@ -195,7 +195,8 @@ ldm/grabber.py         Site Grabber
 ldm/server.py          API local para a extensão e a CLI
 ldm/gui/               janelas e diálogos GTK 3
 browser_extension/     extensão MV3 (Chrome/Edge/Firefox): botão sobre o vídeo, sniffer de rede, hook na página
-packaging/appimage/    script de geração da AppImage
+linux/                 build do Linux: script da AppImage (resultado em linux/dist/)
+windows/               build do Windows: build.py, spec do PyInstaller, script do Inno Setup
 identidade_visual/     logo, ícones, cores e capturas de tela
 tests/                 testes unitários e teste ponta a ponta no navegador
 ```
@@ -213,10 +214,10 @@ O `tests/e2e_browser.py` carrega a extensão num Chromium real com Playwright e 
 No Ubuntu 24.04 (pode ser numa distrobox), com `python3-gi python3-gi-cairo gir1.2-gtk-3.0 librsvg2-common libgdk-pixbuf2.0-bin python3-pip`:
 
 ```bash
-python3 packaging/appimage/build_appimage.py      # resultado em dist/
+python3 linux/build_appimage.py      # resultado em linux/dist/
 ```
 
-**Windows:** gerado pelo GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup; depois o instalador é instalado e testado numa máquina Windows. Localmente, num shell MSYS2 UCRT64: `python packaging/windows/build.py`.
+**Windows:** gerado pelo GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup; depois o instalador é instalado e testado numa máquina Windows. Localmente, num shell MSYS2 UCRT64: `python windows/build.py` (resultado em `windows/build/`).
 
 ## Limitações
 

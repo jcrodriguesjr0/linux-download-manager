@@ -256,7 +256,7 @@ def hover_and_click_panel(page, selector="video"):
 
 ext = str(ROOT / "browser_extension")
 if PORT != 9614:
-    shutil.copytree(ext, TMP / "ext", dirs_exist_ok=True)
+    shutil.copytree(ext, TMP / "ext", dirs_exist_ok=True, ignore=shutil.ignore_patterns("dist"))
     bg = TMP / "ext" / "background.js"
     bg.write_text(bg.read_text().replace("const DEFAULT_PORT = 9614;", f"const DEFAULT_PORT = {PORT};"))
     if os.environ.get("LDM_E2E_TRACE"):   # depuração: registra os passos da captura em globalThis.__trace

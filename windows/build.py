@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Gera o Lunix Download Manager para Windows (roda no MSYS2 UCRT64; usado pelo GitHub Actions).
 
-  python packaging/windows/build.py [--skip-tools]
+  python windows/build.py [--skip-tools]
 
-Saída em build/win/:
+Saída em windows/build/:
   dist/LDM/                      programa (LDM.exe com janela, ldm-cli.exe para terminal, bin/ com yt-dlp, ffmpeg, deno)
   out/Lunix_Download_Manager-<versão>-portable.zip
-O instalador .exe é gerado depois pelo Inno Setup (packaging/windows/ldm.iss).
+O instalador .exe é gerado depois pelo Inno Setup (windows/ldm.iss).
 """
 import argparse
 import hashlib
@@ -20,8 +20,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / "build" / "win"
+ROOT = Path(__file__).resolve().parents[1]
+WORK = ROOT / "windows" / "build"
 STAGE = WORK / "stage"
 CACHE = WORK / "cache"
 DIST = WORK / "dist"
@@ -116,7 +116,7 @@ def stage_extension():
     dst = STAGE / "browser_extension"
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(ROOT / "browser_extension", dst)
+    shutil.copytree(ROOT / "browser_extension", dst, ignore=shutil.ignore_patterns("dist"))
     m = dst / "manifest.json"
     data = json.loads(m.read_text(encoding="utf-8"))
     for k in ("name", "description"):
@@ -141,7 +141,7 @@ def main():
     log("PyInstaller")
     env = dict(os.environ, LDM_STAGE=str(STAGE))
     subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", str(DIST),
-                    "--workpath", str(WORK / "pyi"), str(ROOT / "packaging" / "windows" / "ldm.spec")],
+                    "--workpath", str(WORK / "pyi"), str(ROOT / "windows" / "ldm.spec")],
                    check=True, env=env)
     app = DIST / "LDM"
     if not args.skip_tools:

@@ -3,4 +3,4 @@ __pycache__/
 dist/
 build/
 *.AppImage
-browser_extension.zip
+*.zip

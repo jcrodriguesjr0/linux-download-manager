@@ -148,5 +148,5 @@ def export_extension() -> Path:
     if cur != src_ver:
         if EXT_EXPORT.exists():
             shutil.rmtree(EXT_EXPORT)
-        shutil.copytree(EXT_SRC, EXT_EXPORT)
+        shutil.copytree(EXT_SRC, EXT_EXPORT, ignore=shutil.ignore_patterns("dist"))
     return EXT_EXPORT
