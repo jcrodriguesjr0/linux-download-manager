@@ -329,6 +329,25 @@ with sync_playwright() as p:
     check("Ctrl+Alt+clique: força o LDM até numa página comum", bool(it), f"{it and it['status']}")
     kp.close()
 
+    # botão mini: só o ícone, configurado no popup (storage.local.overlay_size)
+    sw.evaluate("() => chrome.storage.local.set({overlay_size: 'mini'})")
+    before = {i["id"] for i in m.items.values()}
+    mp = ctx.new_page()
+    mp.goto(BASE + "/page.html")
+    mp.evaluate("document.getElementById('v').play()")
+    mp.wait_for_timeout(1200)
+    try:
+        if os.environ.get("LDM_E2E_SHOT_MINI"):
+            os.environ["LDM_E2E_SHOT"] = os.environ["LDM_E2E_SHOT_MINI"]
+        hb = hover_and_click_panel(mp)
+        check("botão mini: só o ícone, pequeno e visível", 26 <= hb["w"] <= 44 and 26 <= hb["h"] <= 44, f"{hb}")
+    except Exception as e:  # noqa: BLE001
+        check("botão mini: só o ícone, pequeno e visível", False, str(e)[:200])
+    it = wait_item(lambda i: i["id"] not in before and i.get("kind") == "video", 90)
+    check("botão mini envia o vídeo ao LDM", bool(it), f"{it and it['status']} {it and it.get('error')}")
+    sw.evaluate("() => chrome.storage.local.set({overlay_size: 'full'})")
+    mp.close()
+
     if "--youtube-sim" in sys.argv:
         # URLs reais do googlevideo (obtidas pelo yt-dlp só para montar o teste); a página as pede em fatias
         # range= como o player do YouTube faz, e o LDM (modo só captura) precisa remontar, baixar e mesclar.

@@ -5,12 +5,19 @@
   const B = globalThis.browser ?? globalThis.chrome;
   const MIN_W = 160, MIN_H = 90;
   let enabled = true;
-  B.storage.local.get({ overlay: true }).then((c) => (enabled = c.overlay));
+  let size = "full";                       // "full" = ícone + texto + qualidade; "mini" = só o ícone
+  B.storage.local.get({ overlay: true, overlay_size: "full" }).then((c) => { enabled = c.overlay; setSize(c.overlay_size); });
   B.storage.onChanged.addListener((ch) => {
     if (ch.overlay) { enabled = ch.overlay.newValue; if (!enabled) hide(); }
+    if (ch.overlay_size) setSize(ch.overlay_size.newValue);
   });
 
-  let host, label, quality, qualityDiv, current, hideTimer, raf, lastMove = 0;
+  let host, pill, label, quality, qualityDiv, current, hideTimer, raf, lastMove = 0;
+
+  function setSize(s) {
+    size = s === "mini" ? "mini" : "full";
+    if (pill) pill.classList.toggle("mini", size === "mini");
+  }
 
   // ---- ponte com page_hook.js (contexto da página): vídeos achados no conteúdo das respostas
   const TAG = "__ldm_page_hook__";
@@ -63,7 +70,16 @@
       .q{padding:6px 8px;color:#f59e0b;font-size:11px;font-weight:600;border-radius:9999px;transition:background .15s,color .15s}
       .q:hover{background:rgba(245,158,11,.15);color:#fbbf24}
       .q svg{width:10px;height:10px;margin-left:2px}
-      .hid{display:none}</style>
+      .hid{display:none}
+      /* mini: só o símbolo, num círculo de 36px (visível sem cobrir o vídeo) */
+      .pill.mini{padding:0}
+      .pill.mini .main{padding:8px;gap:0}
+      .pill.mini .main span,.pill.mini .div,.pill.mini .q{display:none}
+      .pill.mini svg.ic{width:18px;height:18px}
+      .pill[data-state=ok]{border-color:#22c55e;box-shadow:0 0 14px rgba(34,197,94,.45)}
+      .pill[data-state=err]{border-color:#ef4444;box-shadow:0 0 14px rgba(239,68,68,.45)}
+      .pill[data-state=busy] svg.ic{animation:pulse .8s ease-in-out infinite alternate}
+      @keyframes pulse{from{opacity:1}to{opacity:.35}}</style>
       <div class="pill" title="Linux Download Manager">
         <button class="main"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="20.5" width="18" height="2.5" rx="1.25" fill="#F59E0B"/><rect x="5" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><rect x="10.5" y="0.5" width="3" height="10" rx="1.5" fill="#F59E0B"/><rect x="16" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><path d="M12 18 3.5 9.5h17z" fill="#F59E0B"/></svg><span>Baixar este vídeo</span></button>
         <span class="div hid"></span>
@@ -72,7 +88,8 @@
     label = sh.querySelector(".main span");
     quality = sh.querySelector(".q");
     qualityDiv = sh.querySelector(".div");
-    const pill = sh.querySelector(".pill");          // a pílula inteira é clicável (botão, divisor e qualidade)
+    pill = sh.querySelector(".pill");                // a pílula inteira é clicável (botão, divisor e qualidade)
+    setSize(size);
     pill.addEventListener("click", onClick, true);
     pill.addEventListener("mousedown", (e) => e.stopPropagation(), true);
     host.addEventListener("mouseenter", () => clearTimeout(hideTimer));
@@ -147,6 +164,8 @@
     e.stopPropagation();
     const v = current;
     label.textContent = "Enviando ao LDM...";
+    pill.dataset.state = "busy";
+    pill.title = "Enviando ao LDM...";
     let res;
     try {
       res = await B.runtime.sendMessage({
@@ -161,7 +180,14 @@
     } catch (err) {
       res = { error: String(err) };
     }
-    label.textContent = res && !res.error ? "Enviado ao LDM ✓" : "Abra o Linux Download Manager";
-    setTimeout(() => (label.textContent = "Baixar este vídeo"), 3000);
+    const ok = res && !res.error;
+    label.textContent = ok ? "Enviado ao LDM ✓" : "Abra o Linux Download Manager";
+    pill.dataset.state = ok ? "ok" : "err";          // no modo mini a cor da borda mostra o resultado
+    pill.title = label.textContent;
+    setTimeout(() => {
+      label.textContent = "Baixar este vídeo";
+      delete pill.dataset.state;
+      pill.title = "Linux Download Manager: baixar este vídeo";
+    }, 3000);
   }
 })();

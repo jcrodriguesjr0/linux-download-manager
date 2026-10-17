@@ -12,10 +12,17 @@ function fmt(n) {
 
 (async () => {
   const [tab] = await B.tabs.query({ active: true, currentWindow: true });
-  const c = await B.storage.local.get({ port: 9614, capture: true, overlay: true });
+  const c = await B.storage.local.get({ port: 9614, capture: true, overlay: true, overlay_size: "full" });
   $("capture").checked = c.capture;
   $("overlay").checked = c.overlay;
-  $("overlay").onchange = (e) => B.storage.local.set({ overlay: e.target.checked });
+  const sizeBox = $("sizebox");
+  const syncSize = () => sizeBox.style.opacity = $("overlay").checked ? "1" : ".4";
+  $("overlay").onchange = (e) => { B.storage.local.set({ overlay: e.target.checked }); syncSize(); };
+  for (const r of document.querySelectorAll("input[name=osize]")) {
+    r.checked = r.value === c.overlay_size;
+    r.onchange = () => B.storage.local.set({ overlay_size: r.value });
+  }
+  syncSize();
   $("video").onclick = async () => {
     $("video").textContent = "Enviando...";
     const r = await send({ op: "video", tabId: tab.id, frame_url: tab.url });

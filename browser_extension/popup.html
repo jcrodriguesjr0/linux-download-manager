@@ -23,6 +23,11 @@
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
   input[type=number] { width: 70px; }
   .empty { color: var(--muted); }
+  .size { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin: 4px 0 0 22px; font-size: 12px; color: var(--muted); }
+  .size > span { flex-basis: 100%; }
+  .size label { color: var(--fg); }
+  input[type=number] { background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+  input[type=radio] { accent-color: var(--video); }
 </style>
 </head>
 <body>
@@ -33,6 +38,11 @@
 <section>
   <label><input type="checkbox" id="capture"> Capturar downloads do navegador</label>
   <label><input type="checkbox" id="overlay"> Mostrar "Baixar este vídeo" sobre os players</label>
+  <div class="size" id="sizebox">
+    <span>Tamanho do botão:</span>
+    <label><input type="radio" name="osize" value="full"> Completo</label>
+    <label><input type="radio" name="osize" value="mini"> Mini (só o ícone)</label>
+  </div>
 </section>
 <section>
   <h4>Streams capturados nesta aba</h4>

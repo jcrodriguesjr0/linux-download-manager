@@ -33,7 +33,7 @@ Then install the browser extension (see below).
 - Global and per-file speed limiter.
 
 **Video grabber**
-- A **"Download this video"** button over any `<video>` on any site, including iframes and fullscreen.
+- A **"Download this video"** button over any `<video>` on any site, including iframes and fullscreen. Choose **Full** (icon + text + resolution) or **Mini** (icon only) in the extension popup.
 - Quality selection, audio-only/MP3, embedded subtitles and whole playlists.
 - YouTube and about 1,800 sites via yt-dlp. Direct streams use LDM's multi-connection engine and are merged with ffmpeg.
 - **Passive capture**, as IDM does, for sites yt-dlp does not know:

@@ -31,7 +31,7 @@ Depois, instale a extensão do navegador (veja abaixo).
 - Limitador de velocidade global e por arquivo.
 
 **Grabber de vídeo**
-- Botão **"Baixar este vídeo"** sobre qualquer `<video>` de qualquer site, inclusive em iframes e em tela cheia.
+- Botão **"Baixar este vídeo"** sobre qualquer `<video>` de qualquer site, inclusive em iframes e em tela cheia. No popup da extensão dá para escolher **Completo** (ícone, texto e resolução) ou **Mini** (só o ícone).
 - Escolha de qualidade, somente áudio/MP3, legendas embutidas e playlists inteiras.
 - YouTube e cerca de 1.800 sites via yt-dlp. Os streams diretos usam o motor multi-conexão do LDM e são mesclados com ffmpeg.
 - **Captura passiva**, como no IDM, para sites que o yt-dlp não conhece:
