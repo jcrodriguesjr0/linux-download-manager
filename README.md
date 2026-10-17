@@ -12,7 +12,16 @@ A download manager for Linux inspired by Internet Download Manager. It speeds up
 
 **[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, single file, nothing to install)
 
-It bundles Python 3.12, GTK 3, yt-dlp, Deno and ffmpeg. It runs on any x86_64 Linux with glibc ≥ 2.39: SteamOS, Ubuntu 24.04+, Fedora 40+, Arch.
+It bundles Python 3.12, GTK 3, yt-dlp, Deno and ffmpeg.
+
+**Requirements**
+- **CPU:** x86_64 (Intel/AMD 64-bit). ARM is not supported.
+- **glibc:** 2.38 or newer.
+  - Works on SteamOS, Ubuntu 24.04+, Linux Mint 22+, Fedora 39+, Debian 13, Arch/Manjaro and openSUSE Tumbleweed.
+  - **Does not work** on Ubuntu 22.04, Linux Mint 21, Debian 12 or RHEL/Alma/Rocky 9.
+- **Display:** X11, or Wayland with XWayland (standard on current desktops).
+- **FUSE:** `fusermount` is needed to mount the AppImage. The old `libfuse2` is not required. Without FUSE, run it with `--appimage-extract-and-run`.
+- **Tray icon:** works on KDE and Cinnamon. Plain GNOME needs the "AppIndicator" extension.
 
 ```bash
 chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage

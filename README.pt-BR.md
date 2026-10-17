@@ -10,7 +10,16 @@ Gerenciador de downloads para Linux inspirado no Internet Download Manager. Acel
 
 **[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, arquivo único, sem instalar nada)
 
-Traz Python 3.12, GTK 3, yt-dlp, Deno e ffmpeg. Roda em qualquer Linux x86_64 com glibc ≥ 2.39: SteamOS, Ubuntu 24.04+, Fedora 40+, Arch.
+Traz Python 3.12, GTK 3, yt-dlp, Deno e ffmpeg.
+
+**Requisitos**
+- **Processador:** x86_64 (Intel/AMD de 64 bits). ARM não é suportado.
+- **glibc:** 2.38 ou mais nova.
+  - Funciona no SteamOS, Ubuntu 24.04+, Linux Mint 22+, Fedora 39+, Debian 13, Arch/Manjaro e openSUSE Tumbleweed.
+  - **Não funciona** no Ubuntu 22.04, Linux Mint 21, Debian 12 nem no RHEL/Alma/Rocky 9.
+- **Tela:** X11, ou Wayland com XWayland (padrão nos desktops atuais).
+- **FUSE:** o `fusermount` é necessário para montar a AppImage. A antiga `libfuse2` não é necessária. Sem FUSE, rode com `--appimage-extract-and-run`.
+- **Ícone na bandeja:** funciona no KDE e no Cinnamon. No GNOME puro é preciso a extensão "AppIndicator".
 
 ```bash
 chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage
