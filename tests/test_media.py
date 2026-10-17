@@ -70,7 +70,8 @@ class MediaTest(unittest.TestCase):
         self.assertEqual(lines[0], "# Netscape HTTP Cookie File")
         self.assertEqual(lines[1].split("\t"), [".youtube.com", "TRUE", "/", "TRUE", "2000000000", "A", "1"])
         self.assertEqual(lines[2].split("\t")[:2], ["www.site.com", "FALSE"])
-        self.assertEqual(oct(p.stat().st_mode & 0o777), "0o600")
+        if os.name != "nt":   # Windows não tem permissões Unix; a pasta do usuário já é privada
+            self.assertEqual(oct(p.stat().st_mode & 0o777), "0o600")
 
     def _item(self, choice, name="saida"):
         return {"id": "m1", "url": "https://site/v", "save_dir": str(self.d / "out"), "filename": "",
