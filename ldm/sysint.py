@@ -84,11 +84,12 @@ def open_path(p):
 def open_folder(p):
     """Abre a pasta destacando o arquivo (Explorer /select ou FileManager1 do freedesktop)."""
     p = Path(p)
+    if not p.exists():                     # arquivo ainda não existe: abre a pasta (criando se preciso)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        open_path(p.parent)
+        return
     if IS_WIN:
-        if p.exists():
-            subprocess.Popen(["explorer", "/select,", str(p)])
-        else:
-            open_path(p.parent)
+        subprocess.Popen(["explorer", "/select,", str(p)])
         return
     try:
         from gi.repository import Gio, GLib

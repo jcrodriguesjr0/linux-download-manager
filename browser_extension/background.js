@@ -88,31 +88,74 @@ async function sendStream(tab, m) {
 }
 
 // ---------------------------------------------------------------- captura de downloads
-B.downloads.onCreated.addListener(async (item) => {
+// Como o IDM, olha o tráfego: os cabeçalhos da resposta (nome real no Content-Disposition, tamanho, tipo)
+// chegam ANTES de o navegador criar o download. Quando o download aparece (onCreated), a decisão já usa o nome
+// e o tamanho verdadeiros, mesmo em links dinâmicos como /download.php?id=123.
+const CAPTURE_TIMEOUT = 5000;
+const DL_HEADERS_MAX = 200;
+const dlHeaders = new Map();   // url -> { name, size, mime, t }
+
+function filenameFromCD(cd) {
+  let m = /filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i.exec(cd);
+  if (m) { try { return decodeURIComponent(m[2].trim().replace(/^"|"$/g, "")); } catch (_) {} }
+  m = /filename\s*=\s*("([^"]*)"|[^;]+)/i.exec(cd);
+  return m ? (m[2] ?? m[1]).trim() : "";
+}
+
+B.webRequest.onHeadersReceived.addListener((d) => {
+  if (d.statusCode < 200 || d.statusCode >= 300) return;
+  const h = {};
+  for (const x of d.responseHeaders || []) h[x.name.toLowerCase()] = x.value || "";
+  const cd = h["content-disposition"] || "";
+  const ct = (h["content-type"] || "").split(";")[0].trim().toLowerCase();
+  const attachment = /attachment|filename/i.test(cd);
+  const renderable = /^(text\/|image\/|application\/(json|javascript|xml|xhtml|pdf)|$)/.test(ct);
+  if (!attachment && renderable) return;      // página/recursos comuns: não é download
+  const total = /\/(\d+)$/.exec(h["content-range"] || "");
+  dlHeaders.set(d.url, { name: filenameFromCD(cd), size: total ? +total[1] : (+h["content-length"] || -1), mime: ct, t: Date.now() });
+  if (dlHeaders.size > DL_HEADERS_MAX) dlHeaders.delete(dlHeaders.keys().next().value);
+}, { urls: ["<all_urls>"], types: ["main_frame", "sub_frame", "other", "xmlhttprequest"] }, ["responseHeaders"]);
+
+async function captureDecision(item) {
   const { capture } = await cfg();
-  if (!capture) return;
+  if (!capture) return false;
   const url = item.finalUrl || item.url;
-  if (!/^(https?|ftp):/i.test(url)) return; // blob:, data: ficam com o navegador
-  if (item.byExtensionId && item.byExtensionId === B.runtime.id) return;
+  if (!/^(https?|ftp):/i.test(url)) return false;          // blob:, data: ficam com o navegador
+  if (item.byExtensionId && item.byExtensionId === B.runtime.id) return false;
   const now = Date.now();
   for (const [u, t] of skipUntil) if (t < now) skipUntil.delete(u);
-  if (skipUntil.has(url) || skipUntil.has(item.url) || skipUntil.has("*")) return;   // usuário pediu o navegador
+  if (skipUntil.has(url) || skipUntil.has(item.url) || skipUntil.has("*")) return false;   // usuário pediu o navegador
+  const hdr = dlHeaders.get(url) || dlHeaders.get(item.url) || {};
+  const size = item.totalBytes > 0 ? item.totalBytes : (item.fileSize > 0 ? item.fileSize : (hdr.size > 0 ? hdr.size : -1));
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CAPTURE_TIMEOUT);
   try {
-    const res = await api("/capture", {
-      url,
-      filename: basename(item.filename),
-      referer: item.referrer || "",
-      mime: item.mime || "",
-      size: item.totalBytes > 0 ? item.totalBytes : (item.fileSize > 0 ? item.fileSize : -1),
-      cookies: await cookiesFor(url),
-      user_agent: navigator.userAgent,
+    const { port } = await cfg();
+    const r = await fetch(`http://127.0.0.1:${port}/capture`, {
+      method: "POST", signal: ctl.signal,
+      headers: { "Content-Type": "application/json", "X-LDM-Client": "1" },
+      body: JSON.stringify({
+        url,
+        filename: hdr.name || basename(item.filename),
+        referer: item.referrer || "",
+        mime: item.mime || hdr.mime || "",
+        size,
+        cookies: await cookiesFor(url),
+        user_agent: navigator.userAgent,
+      }),
     });
-    if (res.accepted) {
-      try { await B.downloads.cancel(item.id); } catch (_) {}
-      try { await B.downloads.erase({ id: item.id }); } catch (_) {}
-    }
+    return r.ok && (await r.json()).accepted === true;
   } catch (_) {
-    // LDM fechado: o navegador continua o download normalmente.
+    return false;   // LDM fechado ou sem resposta: o navegador continua o download normalmente
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+B.downloads.onCreated.addListener(async (item) => {
+  if (await captureDecision(item)) {
+    try { await B.downloads.cancel(item.id); } catch (_) {}
+    try { await B.downloads.erase({ id: item.id }); } catch (_) {}
   }
 });
 

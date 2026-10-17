@@ -118,6 +118,10 @@ button.ldm-ghost {{
 }}
 button.ldm-ghost:hover {{ border-color: {PRIMARY}; }}
 button.ldm-ghost:checked {{ border-color: {PRIMARY}; color: {PRIMARY}; }}
+.linked button.ldm-ghost {{ border-radius: 0; padding: 4px 9px; }}
+.linked button.ldm-ghost:first-child {{ border-radius: 8px 0 0 8px; }}
+.linked button.ldm-ghost:last-child {{ border-radius: 0 8px 8px 0; }}
+button.ldm-ghost:disabled {{ opacity: 0.6; }}
 
 /* lateral */
 .ldm-sidebar, .ldm-sidebar treeview.view {{ background-color: {t['surface']}; color: {t['text']}; }}

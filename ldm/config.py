@@ -45,7 +45,9 @@ DEFAULTS = {
     "api_port": 9614,
     "api_token": "",
     "capture_exts": DEFAULT_CAPTURE_EXTS,
-    "capture_min_size_kb": 0,
+    "capture_min_size_kb": 51200,      # abaixo de 50 MB o navegador baixa
+    "capture_any_type": True,          # a partir do mínimo, o LDM captura qualquer tipo de arquivo
+    "settings_version": 3,
     "exception_sites": "",
     "exception_addresses": "",
     "show_file_info_dialog": True,
@@ -113,6 +115,11 @@ class Settings:
         changed = False
         if not self.data.get("api_token"):
             self.data["api_token"] = secrets.token_urlsafe(24)
+            changed = True
+        if saved and saved.get("settings_version", 1) < 3:   # 1.4.0: LDM preferido a partir de 50 MB
+            self.data["settings_version"] = 3
+            if not saved.get("capture_min_size_kb"):
+                self.data["capture_min_size_kb"] = 51200
             changed = True
         if saved and saved.get("identity_version", 1) < 2:   # nova identidade visual: liga o modo escuro uma vez
             self.data["identity_version"] = 2

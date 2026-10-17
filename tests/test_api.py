@@ -82,6 +82,42 @@ class ApiTest(unittest.TestCase):
         self.assertFalse(should_capture(s, {"url": "https://a.com/x.zip", "size": 1000}))
         self.assertTrue(should_capture(s, {"url": "https://a.com/dl?id=1", "mime": "application/octet-stream"}))
 
+    def test_remove_incomplete(self):
+        """Remover incompleto: apagar descarta o .part; não apagar guarda a parte baixada no destino."""
+        import test_engine as TE
+        old, TE.Handler.slow = TE.Handler.slow, 0.3
+        try:
+            for delete, expect in ((False, True), (True, False)):
+                it = self.m.add(self.base + f"/parcial{int(delete)}.bin", start=True)
+                for _ in range(100):
+                    if self.m.runtime.get(it["id"], {}).get("downloaded", 0) > 0:
+                        break
+                    time.sleep(0.05)
+                self.m.pause(it["id"])
+                time.sleep(0.5)
+                tmp = self.m.temp_path(it["id"])
+                self.assertTrue(tmp.is_file(), tmp)
+                kept = Path(it["save_dir"]) / (it["filename"] + ".part")
+                self.m.remove(it["id"], delete_file=delete)
+                self.assertFalse(tmp.exists())
+                self.assertEqual(kept.exists(), expect, kept)
+                if expect:
+                    self.assertGreater(kept.stat().st_size, 0)
+                    kept.unlink()
+        finally:
+            TE.Handler.slow = old
+
+    def test_capture_by_size(self):
+        """Padrão 1.4.0: qualquer tipo a partir de 50 MB vai para o LDM; abaixo disso, o navegador."""
+        s = {"browser_capture": True, "exception_sites": "", "exception_addresses": "",
+             "capture_exts": "ZIP", "capture_min_size_kb": 51200, "capture_any_type": True}
+        big, small = 60 * 2**20, 10 * 2**20
+        self.assertTrue(should_capture(s, {"url": "https://a.com/get?id=7", "filename": "dados.xyz", "size": big}))
+        self.assertFalse(should_capture(s, {"url": "https://a.com/x.zip", "size": small}))
+        self.assertTrue(should_capture(s, {"url": "https://a.com/x.zip"}))                 # tamanho desconhecido: tipo
+        self.assertFalse(should_capture(s, {"url": "https://a.com/x.pdf"}))
+        self.assertFalse(should_capture(dict(s, capture_any_type=False), {"url": "https://a.com/x.xyz", "size": big}))
+
     def test_queue(self):
         q = self.m.add_queue("teste")
         q["parallel"] = 2

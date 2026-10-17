@@ -638,6 +638,16 @@ def speed_limiter_dialog(win):
     d.destroy()
 
 
-def confirm_delete(win, n, has_complete):
-    return confirm(win, f"Excluir {n} download(s) da lista do LDM?",
-                   check_label="Excluir também os arquivos concluídos do disco" if has_complete else None)
+def confirm_delete(win, n, has_complete, has_incomplete=False):
+    if has_complete and has_incomplete:
+        label = "Apagar também os arquivos do disco (concluídos e incompletos)"
+    elif has_incomplete:
+        label = "Apagar também o arquivo incompleto"
+    else:
+        label = "Apagar também os arquivos concluídos do disco"
+    secondary = None
+    if has_incomplete:
+        secondary = ("Se não apagar, a parte já baixada é guardada na pasta de destino como \"nome.part\" "
+                     "(pode estar incompleta e não abrir).")
+    return confirm(win, f"Excluir {n} download(s) da lista do LDM?", secondary=secondary,
+                   check_label=label, check_default=has_incomplete and not has_complete)

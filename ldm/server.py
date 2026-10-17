@@ -28,8 +28,12 @@ def should_capture(settings, payload) -> bool:
     if settings["exception_addresses"] and match_site(url, settings["exception_addresses"]):
         return False
     size = int(payload.get("size") or -1)
-    if size >= 0 and size < int(settings["capture_min_size_kb"] or 0) * 1024:
-        return False
+    min_bytes = int(settings["capture_min_size_kb"] or 0) * 1024
+    if size >= 0 and size < min_bytes:
+        return False                      # pequeno: fica com o navegador
+    if size >= 0 and min_bytes > 0 and settings["capture_any_type"]:
+        return True                       # grande o bastante: o LDM assume qualquer tipo de arquivo
+    # tamanho desconhecido (ou sem tamanho mínimo): decide pela lista de tipos
     return match_ext(name, settings["capture_exts"]) or (not ext_of(name) and payload.get("mime", "").startswith(
         ("application/octet-stream", "application/x-", "video/", "audio/")))
 

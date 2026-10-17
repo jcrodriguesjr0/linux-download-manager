@@ -234,6 +234,24 @@ class MainWindow(Gtk.ApplicationWindow):
         theme.style(self.limiter_btn, "ldm-ghost")
         hb.pack_end(self.limiter_btn)
         hb.pack_end(self._button("Pausar tudo", self.m.pause_all, "ldm-ghost", tip="Pausar todos os downloads"))
+        tools = Gtk.Box(spacing=0)
+        tools.get_style_context().add_class("linked")
+        tools.pack_start(self._button(None, self.scheduler, "ldm-ghost", icon=theme.icon("alarm-symbolic"), tip="Agendador"),
+                         False, False, 0)
+        tools.pack_start(self._button(None, self.options, "ldm-ghost", icon=theme.icon("preferences-system"), tip="Opções"),
+                         False, False, 0)
+        hb.pack_end(tools)
+        sel = Gtk.Box(spacing=0)
+        sel.get_style_context().add_class("linked")
+        self.sel_buttons = [
+            self._button(None, self.resume_sel, "ldm-ghost", icon=theme.icon("media-playback-start"), tip="Retomar o selecionado"),
+            self._button(None, self.stop_sel, "ldm-ghost", icon=theme.icon("media-playback-pause"), tip="Pausar o selecionado"),
+            self._button(None, self.delete_sel, "ldm-ghost", icon=theme.icon("edit-delete"), tip="Excluir o selecionado (Delete)"),
+        ]
+        for b in self.sel_buttons:
+            b.set_sensitive(False)
+            sel.pack_start(b, False, False, 0)
+        hb.pack_end(sel)
         hb.pack_end(self._button("★ Vídeo", lambda: V.ask_video_url(self), "ldm-video",
                                  tip="Baixar o vídeo de uma página (Ctrl+Shift+V)"))
         hb.pack_end(self._button("+ URL", self.add_url, "ldm-primary", tip="Adicionar URL (Ctrl+N)"))
@@ -358,6 +376,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.tv.set_rubber_banding(True)
         self.tv.connect("row-activated", self._on_activate)
         self.tv.connect("button-press-event", self._on_button)
+        self.tv.get_selection().connect("changed", self._on_list_sel)
         self.columns = {}
         mono = theme.MONO_FONT.split(",")[0] + " 9.5"
         for key, title, text_col, sort_col in COLUMNS:
@@ -396,6 +415,11 @@ class MainWindow(Gtk.ApplicationWindow):
     @staticmethod
     def _muted_color(_col, cell, _model, _tit, _data):
         cell.set_property("foreground", theme.tokens()["muted"])
+
+    def _on_list_sel(self, sel):
+        has = sel.count_selected_rows() > 0
+        for b in getattr(self, "sel_buttons", []):
+            b.set_sensitive(has)
 
     def _rate_color(self, _col, cell, model, tit, _data):
         it = self.m.items.get(model[tit][C_ID], {})
@@ -686,7 +710,10 @@ class MainWindow(Gtk.ApplicationWindow):
         if one and it.get("status") == ST_COMPLETE:
             self._mi(menu, "Abrir", lambda: self.open_sel(False))
             self._mi(menu, "Abrir com...", lambda: D.CompleteDialog(self, ids[0])._open_with(None))
-        self._mi(menu, "Abrir pasta", lambda: self.open_sel(True))
+        self._mi(menu, "Abrir pasta de destino" if one and it.get("status") != ST_COMPLETE else "Abrir pasta",
+                 lambda: self.open_sel(True))
+        if one and it.get("status") != ST_COMPLETE:
+            self._mi(menu, "Abrir pasta temporária (onde está baixando)", self.open_temp_sel)
         menu.append(Gtk.SeparatorMenuItem())
         self._mi(menu, "Baixar agora / Retomar", self.resume_sel)
         self._mi(menu, "Parar download", self.stop_sel)
@@ -766,7 +793,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if not ids:
             return
         has_c = any(self.m.items[i]["status"] == ST_COMPLETE for i in ids if i in self.m.items)
-        ok, del_files = D.confirm_delete(self, len(ids), has_c)
+        has_i = any(self.m.items[i]["status"] != ST_COMPLETE for i in ids if i in self.m.items)
+        ok, del_files = D.confirm_delete(self, len(ids), has_c, has_i)
         if ok:
             for i in ids:
                 self.m.remove(i, delete_file=del_files)
@@ -778,9 +806,25 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def open_sel(self, folder):
         ids = self.selected_ids()
-        if ids:
-            p = self.m.file_path(ids[0])
+        if not ids:
+            return
+        it = self.m.items.get(ids[0], {})
+        p = self.m.file_path(ids[0])
+        if it.get("status") == ST_COMPLETE:
             D.open_folder(p) if folder else D.open_path(p)
+        elif folder:                       # em andamento: o arquivo só chega ao destino ao concluir
+            p.parent.mkdir(parents=True, exist_ok=True)
+            D.open_path(p.parent)
+        else:
+            message(self, "O download ainda não terminou.",
+                    secondary=f"Enquanto baixa, os dados ficam em:\n{self.m.temp_path(ids[0])}\n\n"
+                              f"Ao concluir, o arquivo vai para:\n{p}")
+
+    def open_temp_sel(self):
+        ids = self.selected_ids()
+        if ids:
+            t = self.m.temp_path(ids[0])
+            D.open_folder(t) if t.is_file() else D.open_path(t)
 
     def properties_sel(self):
         ids = self.selected_ids()

@@ -16,7 +16,7 @@ from .engine import (ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PA
                      Downloader)
 from .hls import HlsDownloader
 from .media import VideoDownloader
-from .util import category_for, sanitize_filename, unique_path
+from .util import category_for, claim_path, move_into, sanitize_filename, unique_path
 
 ACTIVE = (ST_CONNECTING, ST_DOWNLOADING)
 MAIN_QUEUE = "main"
@@ -238,6 +238,11 @@ class Manager:
                     q["items"].remove(iid)
         if it:
             tmp = Path(self.s["temp_dir"]) / f"{iid}.part"
+            if not delete_file and it["status"] != ST_COMPLETE and tmp.exists() and tmp.stat().st_size:
+                # o usuário quis guardar a parte baixada: vai para o destino como "nome.part"
+                dest_dir = Path(it["save_dir"]).expanduser()
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                move_into(str(tmp), claim_path(dest_dir / (it["filename"] + ".part")))
             tmp.unlink(missing_ok=True)
             for suffix in (".hls", ".streams", ".ytdlp"):
                 shutil.rmtree(Path(self.s["temp_dir"]) / f"{iid}{suffix}", ignore_errors=True)
@@ -262,6 +267,14 @@ class Manager:
         (Path(self.s["temp_dir"]) / f"{iid}.part").unlink(missing_ok=True)
         it.update(status=ST_PAUSED, segments=[], downloaded=0, size=-1, resumable=None, error="")
         self.start(iid)
+
+    def temp_path(self, iid) -> Path:
+        """Onde os dados ficam durante o download (movidos para o destino ao concluir)."""
+        base = Path(self.s["temp_dir"]).expanduser()
+        for name in (f"{iid}.part", f"{iid}.streams", f"{iid}.ytdlp", f"{iid}.hls"):
+            if (base / name).exists():
+                return base / name
+        return base
 
     def file_path(self, iid) -> Path:
         it = self.items[iid]

@@ -47,7 +47,9 @@ subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=du
 (WEB / "arquivo.zip").write_bytes(os.urandom(2 * 1024 * 1024))
 (WEB / "page.html").write_text("""<!doctype html><html><head><meta charset="utf-8"><title>Página de teste LDM</title></head><body style="margin:40px">
 <h1>Teste</h1><video id="v" src="clip.mp4" controls width="640" height="360" preload="auto"></video>
-<p><a id="zip" href="arquivo.zip">baixar zip</a></p></body></html>""")
+<p><a id="zip" href="arquivo.zip">baixar zip</a></p>
+<p><a id="big" href="/get?id=7&size=62914560&name=pacote-grande.bin">link dinâmico grande</a></p>
+<p><a id="small" href="/get?id=8&size=1048576&name=pequeno.bin">link dinâmico pequeno</a></p></body></html>""")
 (WEB / "hls").mkdir()
 subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(WEB / "clip.mp4"), "-c", "copy", "-f", "hls", "-hls_time", "2",
                 "-hls_playlist_type", "vod", str(WEB / "hls" / "stream.m3u8")], check=True)
@@ -109,6 +111,32 @@ class RangeHandler(SimpleHTTPRequestHandler):
             import json as _j
             body = _j.dumps({"data": {"shortcode_media": {"video_dash_manifest": MPD_INLINE}}}).encode()
             return self._raw(200, "application/json", body)
+        if u.path == "/get":
+            # link de download dinâmico (sem extensão na URL): nome só no Content-Disposition, com Range
+            q = parse_qs(u.query)
+            size, name = int(q["size"][0]), q["name"][0]
+            a, b, code, extra = 0, size - 1, 200, {}
+            rh = self.headers.get("Range")
+            if rh:
+                ra, rb = re.match(r"bytes=(\d*)-(\d*)", rh).groups()
+                a, b = int(ra or 0), min(int(rb) if rb else size - 1, size - 1)
+                code, extra = 206, {"Content-Range": f"bytes {a}-{b}/{size}"}
+            self.send_response(code)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+            self.send_header("Content-Length", str(b - a + 1))
+            self.send_header("Accept-Ranges", "bytes")
+            for k, v in extra.items():
+                self.send_header(k, v)
+            self.end_headers()
+            n, chunk = b - a + 1, b"\0" * 65536
+            try:
+                while n > 0:
+                    self.wfile.write(chunk[:min(n, 65536)])
+                    n -= 65536
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         if u.path == "/videoplayback":
             q = parse_qs(u.query)
             data = (WEB / ("a.m4a" if q.get("itag") == ["140"] else "v.mp4")).read_bytes()
@@ -182,7 +210,8 @@ s = config.Settings()
 # LDM_E2E_PORT: roda o teste ao lado de um LDM já aberto (a extensão é copiada com a porta trocada)
 PORT = int(os.environ.get("LDM_E2E_PORT", "9614"))
 s.data.update(api_port=PORT, general_folder=str(OUT), temp_dir=str(TMP / "tmp"), video_folder=str(OUT / "video"),
-              video_max_height=360, capture_exts="ZIP MP4", show_complete_dialog=False)
+              video_max_height=360, capture_exts="ZIP MP4", show_complete_dialog=False,
+              capture_min_size_kb=0)   # os cenários antigos usam arquivos pequenos; a regra de 50 MB é testada à parte
 s["categories"] = [c | {"folder": str(OUT / c["name"])} for c in s["categories"]]
 m = Manager(s)
 m.run()
@@ -230,10 +259,22 @@ if PORT != 9614:
     shutil.copytree(ext, TMP / "ext", dirs_exist_ok=True)
     bg = TMP / "ext" / "background.js"
     bg.write_text(bg.read_text().replace("const DEFAULT_PORT = 9614;", f"const DEFAULT_PORT = {PORT};"))
+    if os.environ.get("LDM_E2E_TRACE"):   # depuração: registra os passos da captura em globalThis.__trace
+        bg = TMP / "ext" / "background.js"
+        src = bg.read_text()
+        src = src.replace("async function captureDecision(item, nameHint) {",
+                          "globalThis.__trace = [];\nasync function captureDecision(item, nameHint) {\n"
+                          "  globalThis.__trace.push(['entrada', item.url, item.filename, item.totalBytes, item.mime]);")
+        src = src.replace("    return r.ok && (await r.json()).accepted === true;",
+                          "    const j = await r.json(); globalThis.__trace.push(['resposta', r.status, JSON.stringify(j)]);\n"
+                          "    return r.ok && j.accepted === true;")
+        src = src.replace("  } catch (_) {\n    return false;   // LDM fechado",
+                          "  } catch (_) {\n    globalThis.__trace.push(['erro', String(_)]);\n    return false;   // LDM fechado")
+        bg.write_text(src)
     ext = str(TMP / "ext")
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
-        str(TMP / "profile"), channel="chromium", headless=True, accept_downloads=True,
+        str(TMP / "profile"), channel="chromium", headless=True, accept_downloads=os.environ.get("LDM_E2E_ACCEPT", "1") == "1",
         args=[f"--disable-extensions-except={ext}", f"--load-extension={ext}", "--autoplay-policy=no-user-gesture-required"])
     sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker", timeout=15000)
     check("extensão carregada (service worker ativo)", "background.js" in sw.url, sw.url)
@@ -259,7 +300,9 @@ with sync_playwright() as p:
 
     # 3: captura de download
     page.click("#zip")
-    it = wait_item(lambda i: i["filename"] == "arquivo.zip", 60)
+    it = wait_item(lambda i: i["filename"] == "arquivo.zip", 20 if os.environ.get("LDM_E2E_TRACE") else 60)
+    if os.environ.get("LDM_E2E_TRACE"):
+        print("TRACE", sw.evaluate("() => JSON.stringify(globalThis.__trace || 'sem trace')"), flush=True)
     check("download de .zip capturado do navegador", bool(it) and it["status"] == "complete",
           f"{it and it['status']} {it and it.get('error')}")
 
@@ -328,6 +371,33 @@ with sync_playwright() as p:
     it = wait_item(lambda i: i["url"].endswith("/pagina.html"), 20)
     check("Ctrl+Alt+clique: força o LDM até numa página comum", bool(it), f"{it and it['status']}")
     kp.close()
+
+    # regra padrão: o LDM assume qualquer arquivo a partir de 50 MB; abaixo disso, o navegador baixa.
+    # Links dinâmicos (nome só no Content-Disposition): a extensão decide com os cabeçalhos já recebidos.
+    m.s["capture_min_size_kb"], m.s["capture_any_type"] = 51200, True
+    dp = ctx.new_page()
+    dp.goto(BASE + "/page.html")
+    dp.click("#big")
+    it = wait_item(lambda i: i["filename"] == "pacote-grande.bin", 120)
+    check("link dinâmico de 60 MB vai para o LDM (qualquer tipo ≥ 50 MB)",
+          bool(it) and it["status"] == "complete" and it.get("size") == 62914560,
+          f"{it and it['status']} {it and it.get('size')} {it and it.get('error')}")
+    dp.close()
+    before = {i["id"] for i in m.items.values()}
+    sp = ctx.new_page()
+    sp.goto(BASE + "/page.html")
+    try:
+        with sp.expect_download(timeout=20000, predicate=lambda d: d.suggested_filename == "pequeno.bin") as dl:
+            sp.click("#small")
+        browser_name = dl.value.suggested_filename
+    except Exception as e:  # noqa: BLE001
+        browser_name = f"sem download no navegador ({str(e)[:80]})"
+    time.sleep(2)
+    took = [i["filename"] for i in m.items.values() if i["id"] not in before]
+    check("link dinâmico de 1 MB fica com o navegador", browser_name == "pequeno.bin" and not took,
+          f"navegador={browser_name} ldm={took}")
+    sp.close()
+    m.s["capture_min_size_kb"] = 0
 
     # botão mini: só o ícone, configurado no popup (storage.local.overlay_size)
     sw.evaluate("() => chrome.storage.local.set({overlay_size: 'mini'})")

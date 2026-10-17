@@ -95,7 +95,7 @@ def message(parent, text, kind=Gtk.MessageType.INFO, secondary=None):
     d.destroy()
 
 
-def confirm(parent, text, secondary=None, check_label=None):
+def confirm(parent, text, secondary=None, check_label=None, check_default=False):
     """Retorna (ok, check_ativo)."""
     d = Gtk.MessageDialog(transient_for=parent, modal=True, message_type=Gtk.MessageType.QUESTION,
                           buttons=Gtk.ButtonsType.YES_NO, text=text)
@@ -103,7 +103,7 @@ def confirm(parent, text, secondary=None, check_label=None):
         d.format_secondary_text(secondary)
     cb = None
     if check_label:
-        cb = check(check_label)
+        cb = check(check_label, check_default)
         d.get_message_area().pack_start(cb, False, False, 0)
         cb.show()
     ok = d.run() == Gtk.ResponseType.YES

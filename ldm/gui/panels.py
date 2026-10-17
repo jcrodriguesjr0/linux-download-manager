@@ -53,7 +53,14 @@ class OptionsDialog(Gtk.Dialog):
         g.attach(Gtk.Label(label="Iniciar automaticamente o download dos seguintes tipos de arquivo:", xalign=0), 0, 0, 2, 1)
         self.exts = textview(s["capture_exts"], 80)
         g.attach(self.exts, 0, 1, 2, 1)
-        self.min_kb = row(g, 2, "Tamanho mínimo para captura (KB):", spin(s["capture_min_size_kb"], 0, 10 ** 7))
+        size_box = Gtk.Box(spacing=8)
+        self.min_mb = spin(round(int(s["capture_min_size_kb"] or 0) / 1024), 0, 100000)
+        self.any_type = check("e, a partir desse tamanho, capturar qualquer tipo de arquivo", s["capture_any_type"])
+        size_box.pack_start(self.min_mb, False, False, 0)
+        size_box.pack_start(self.any_type, False, False, 0)
+        row(g, 2, "Tamanho mínimo para captura (MB):", size_box)
+        self.min_mb.set_tooltip_text("Arquivos menores que isso ficam com o navegador. 0 = sem mínimo.\n"
+                                     "Com tamanho desconhecido, vale a lista de tipos acima.")
         g.attach(Gtk.Label(label="Não capturar downloads dos seguintes sites (separe por espaço, aceita *):", xalign=0), 0, 3, 2, 1)
         self.exc_sites = textview(s["exception_sites"], 60)
         g.attach(self.exc_sites, 0, 4, 2, 1)
@@ -187,7 +194,8 @@ class OptionsDialog(Gtk.Dialog):
             s["language"] = self.lang.get_active_id()
             s["api_port"] = int(self.port.get_value())
             s["capture_exts"] = " ".join(tv_text(self.exts).split())
-            s["capture_min_size_kb"] = int(self.min_kb.get_value())
+            s["capture_min_size_kb"] = int(self.min_mb.get_value()) * 1024
+            s["capture_any_type"] = self.any_type.get_active()
             s["exception_sites"] = " ".join(tv_text(self.exc_sites).split())
             s["exception_addresses"] = " ".join(tv_text(self.exc_addr).split())
             s["capture_prevent_key"] = self.k_prevent.get_active_id() or ""
