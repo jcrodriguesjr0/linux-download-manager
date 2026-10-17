@@ -8,7 +8,16 @@ Gerenciador de downloads para Linux inspirado no Internet Download Manager. Acel
 
 ## Download
 
-**[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, arquivo único, sem instalar nada)
+| Sistema | Arquivo |
+|---|---|
+| **Linux** | [`Linux_Download_Manager-1.4.0-x86_64.AppImage`](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) |
+| **Windows 10/11** (64 bits) | [`Lunix_Download_Manager-1.4.0-Setup.exe`](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) (instalador, sem pedir administrador) ou `…-portable.zip` |
+
+No Windows o programa se chama **Lunix Download Manager**. Como não tem assinatura digital, o SmartScreen avisa na primeira execução: clique em **Mais informações → Executar assim mesmo**. Log de erros: `%LOCALAPPDATA%\LDM\ldm.log`.
+
+### Linux
+
+Arquivo único (~145 MB), sem instalar nada.
 
 Traz Python 3.12, GTK 3, yt-dlp, Deno e ffmpeg.
 
@@ -22,10 +31,10 @@ Traz Python 3.12, GTK 3, yt-dlp, Deno e ffmpeg.
 - **Ícone na bandeja:** funciona no KDE e no Cinnamon. No GNOME puro é preciso a extensão "AppIndicator".
 
 ```bash
-chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage
-./Linux_Download_Manager-1.3.0-x86_64.AppImage            # abre o programa
-./Linux_Download_Manager-1.3.0-x86_64.AppImage install    # cria o atalho no menu de aplicativos
-./Linux_Download_Manager-1.3.0-x86_64.AppImage selftest   # diagnóstico dos componentes embutidos
+chmod +x Linux_Download_Manager-1.4.0-x86_64.AppImage
+./Linux_Download_Manager-1.4.0-x86_64.AppImage            # abre o programa
+./Linux_Download_Manager-1.4.0-x86_64.AppImage install    # cria o atalho no menu de aplicativos
+./Linux_Download_Manager-1.4.0-x86_64.AppImage selftest   # diagnóstico dos componentes embutidos
 ```
 
 Depois, instale a extensão do navegador (veja abaixo).
@@ -152,6 +161,8 @@ No Ubuntu 24.04 (pode ser numa distrobox), com `python3-gi python3-gi-cairo gir1
 ```bash
 python3 packaging/appimage/build_appimage.py      # resultado em dist/
 ```
+
+**Windows:** gerado pelo GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup; depois o instalador é instalado e testado numa máquina Windows. Localmente, num shell MSYS2 UCRT64: `python packaging/windows/build.py`.
 
 ## Limitações
 

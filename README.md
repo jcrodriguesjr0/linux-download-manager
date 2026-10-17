@@ -10,7 +10,16 @@ A download manager for Linux inspired by Internet Download Manager. It speeds up
 
 ## Download
 
-**[⬇ Linux_Download_Manager-1.3.0-x86_64.AppImage](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest)** (~144 MB, single file, nothing to install)
+| System | File |
+|---|---|
+| **Linux** | [`Linux_Download_Manager-1.4.0-x86_64.AppImage`](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) |
+| **Windows 10/11** (64-bit) | [`Lunix_Download_Manager-1.4.0-Setup.exe`](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) (installer, no admin rights) or `…-portable.zip` |
+
+On Windows the app is called **Lunix Download Manager**. Being unsigned, Windows SmartScreen shows a warning on first run: click **More info → Run anyway**. Error log: `%LOCALAPPDATA%\LDM\ldm.log`.
+
+### Linux
+
+Single file (~145 MB), nothing to install.
 
 It bundles Python 3.12, GTK 3, yt-dlp, Deno and ffmpeg.
 
@@ -24,10 +33,10 @@ It bundles Python 3.12, GTK 3, yt-dlp, Deno and ffmpeg.
 - **Tray icon:** works on KDE and Cinnamon. Plain GNOME needs the "AppIndicator" extension.
 
 ```bash
-chmod +x Linux_Download_Manager-1.3.0-x86_64.AppImage
-./Linux_Download_Manager-1.3.0-x86_64.AppImage            # open the program
-./Linux_Download_Manager-1.3.0-x86_64.AppImage install    # add it to the application menu
-./Linux_Download_Manager-1.3.0-x86_64.AppImage selftest   # check the bundled components
+chmod +x Linux_Download_Manager-1.4.0-x86_64.AppImage
+./Linux_Download_Manager-1.4.0-x86_64.AppImage            # open the program
+./Linux_Download_Manager-1.4.0-x86_64.AppImage install    # add it to the application menu
+./Linux_Download_Manager-1.4.0-x86_64.AppImage selftest   # check the bundled components
 ```
 
 Then install the browser extension (see below).
@@ -154,6 +163,8 @@ On Ubuntu 24.04 (a distrobox works), with `python3-gi python3-gi-cairo gir1.2-gt
 ```bash
 python3 packaging/appimage/build_appimage.py      # output in dist/
 ```
+
+**Windows:** built by GitHub Actions (`.github/workflows/windows.yml`): MSYS2 + PyInstaller + Inno Setup, then the installer is installed and smoke-tested on a Windows runner. Locally, in an MSYS2 UCRT64 shell: `python packaging/windows/build.py`.
 
 ## Limitations
 
