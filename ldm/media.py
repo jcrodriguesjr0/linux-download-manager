@@ -23,7 +23,7 @@ from pathlib import Path
 from . import engine, hostenv, sysint
 from .config import DATA_DIR
 from .engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED
-from .util import sanitize_filename, unique_path
+from .util import claim_path, move_into, sanitize_filename
 
 VENV_YTDLP = DATA_DIR / "ytdlp" / "bin" / "yt-dlp"
 VENV_PIP = DATA_DIR / "ytdlp" / "bin" / "pip"
@@ -547,7 +547,7 @@ class VideoDownloader:
         ext = (v.get("merge") or info.get("ext") or files[0].suffix.lstrip(".")).lower()
         dest = self._dest(info, ext)
         if len(files) == 1:
-            shutil.move(str(files[0]), dest)
+            move_into(str(files[0]), dest)
         else:
             cmd = self.backend.ffmpeg() + ["-y", "-loglevel", "error"]
             for f in files:
@@ -571,7 +571,7 @@ class VideoDownloader:
                                  ("mp4", "mkv", "webm", "m4a", "mp3", "opus") else name)
         d = Path(it["save_dir"]).expanduser()
         d.mkdir(parents=True, exist_ok=True)
-        return unique_path(d / f"{name}.{ext}")
+        return claim_path(d / f"{name}.{ext}")
 
     def _finish_file(self, path: Path):
         it = self.item

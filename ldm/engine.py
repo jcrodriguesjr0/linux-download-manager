@@ -10,14 +10,13 @@ Fluxo:
 import email.utils
 import os
 import re
-import shutil
 import threading
 import time
 from collections import deque
 from pathlib import Path
 
 from . import net
-from .util import filename_from_headers, unique_path
+from .util import claim_path, filename_from_headers, move_into
 
 _HAS_PWRITE = hasattr(os, "pwrite")
 
@@ -409,11 +408,9 @@ class Downloader:
             self.fd = None
         dest_dir = Path(it["save_dir"]).expanduser()
         dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / it["filename"]
-        if dest.exists() and not it.get("overwrite"):
-            dest = unique_path(dest)
-            it["filename"] = dest.name
-        shutil.move(str(self._temp_path()), dest)
+        dest = claim_path(dest_dir / it["filename"], overwrite=bool(it.get("overwrite")))
+        it["filename"] = dest.name
+        move_into(str(self._temp_path()), dest)
         if self.set_mtime and it.get("last_modified"):
             try:
                 ts = email.utils.parsedate_to_datetime(it["last_modified"]).timestamp()

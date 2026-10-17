@@ -16,7 +16,7 @@ from urllib.parse import urljoin
 
 from . import net, sysint
 from .engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED
-from .util import sanitize_filename, unique_path
+from .util import claim_path, move_into, sanitize_filename
 
 
 def fetch_text(url, item, netcfg):
@@ -128,7 +128,7 @@ class HlsDownloader:
         name = sanitize_filename(Path(it.get("filename") or "video").stem) + ext
         d = Path(it["save_dir"]).expanduser()
         d.mkdir(parents=True, exist_ok=True)
-        return unique_path(d / name)
+        return claim_path(d / name)
 
     def _download(self):
         it = self.item
@@ -200,11 +200,12 @@ class HlsDownloader:
             r = subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", str(joined), "-c", "copy",
                                 "-bsf:a", "aac_adtstoasc", str(dest)], capture_output=True, text=True)
             if r.returncode != 0:
+                dest.unlink(missing_ok=True)          # .mp4 reservado/incompleto
                 dest = self._dest(".ts")
-                shutil.move(str(joined), dest)
+                move_into(str(joined), dest)
         else:
             dest = self._dest(".ts")
-            shutil.move(str(joined), dest)
+            move_into(str(joined), dest)
         shutil.rmtree(self.temp, ignore_errors=True)
         it["filename"] = dest.name
         it["size"] = dest.stat().st_size

@@ -1,6 +1,8 @@
 """Testes da API local: regras de captura, bloqueio de páginas web e fila/gerenciador sem interface."""
+import atexit
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -10,8 +12,9 @@ import urllib.request
 from pathlib import Path
 
 TMP = tempfile.mkdtemp()
-os.environ["XDG_CONFIG_HOME"] = TMP + "/cfg"
-os.environ["XDG_DATA_HOME"] = TMP + "/data"
+atexit.register(shutil.rmtree, TMP, True)        # no fim de toda a execução (outros testes usam a pasta)
+os.environ["LDM_CONFIG_DIR"] = TMP + "/cfg/ldm"   # isola do LDM real (Linux e Windows)
+os.environ["LDM_DATA_DIR"] = TMP + "/data/ldm"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ldm import config  # noqa: E402

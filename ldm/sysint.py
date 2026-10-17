@@ -15,12 +15,16 @@ NO_WINDOW = 0x08000000 if IS_WIN else 0
 
 
 def config_dir() -> Path:
+    if os.environ.get("LDM_CONFIG_DIR"):          # testes e instalações portáteis
+        return Path(os.environ["LDM_CONFIG_DIR"])
     if IS_WIN:
         return Path(os.environ.get("APPDATA", HOME / "AppData/Roaming")) / "LDM"
     return Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "ldm"
 
 
 def data_dir() -> Path:
+    if os.environ.get("LDM_DATA_DIR"):
+        return Path(os.environ["LDM_DATA_DIR"])
     if IS_WIN:
         return Path(os.environ.get("LOCALAPPDATA", HOME / "AppData/Local")) / "LDM"
     return Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "ldm"

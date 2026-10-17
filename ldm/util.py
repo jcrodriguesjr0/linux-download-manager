@@ -2,7 +2,9 @@
 import fnmatch
 import os
 import re
+import shutil
 import string
+import threading
 from email.message import Message
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -97,6 +99,34 @@ def unique_path(path: Path) -> Path:
         if not p.exists():
             return p
         i += 1
+
+
+_CLAIM_LOCK = threading.Lock()
+
+
+def claim_path(path: Path, overwrite=False) -> Path:
+    """Reserva o nome final criando o arquivo vazio de forma atômica, para dois downloads com o mesmo
+    nome que terminam juntos não gravarem um por cima do outro."""
+    with _CLAIM_LOCK:
+        p = path if overwrite else unique_path(path)
+        while True:
+            try:
+                fd = os.open(p, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0), 0o644)
+                os.close(fd)
+                return p
+            except FileExistsError:
+                if overwrite:
+                    return p
+                p = unique_path(p)
+
+
+def move_into(src, dest):
+    """Move substituindo o destino (inclusive o arquivo reservado); funciona no Linux e no Windows."""
+    try:
+        os.replace(src, dest)
+    except OSError:                   # outro disco/partição
+        shutil.copy2(src, dest)
+        os.remove(src)
 
 
 def category_for(name: str, url: str, categories) -> dict | None:
