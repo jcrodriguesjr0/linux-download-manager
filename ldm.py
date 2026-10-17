@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Linux Download Manager - lançador da interface e CLI.
+"""LDM (Linux/Lunix Download Manager) - lançador da interface e CLI.
 
   ldm.py                         abre a interface
   ldm.py --tray                  inicia minimizado na bandeja
@@ -20,9 +20,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ldm import hostenv  # noqa: E402
+from ldm import APP_NAME, hostenv, sysint  # noqa: E402
 
-hostenv.install()   # programas do sistema abertos pelo LDM recebem o ambiente original
+if sysint.IS_WIN:
+    sysint.install_windows_defaults()   # filhos sem janela de console, saída em UTF-8
+else:
+    hostenv.install()   # programas do sistema abertos pelo LDM recebem o ambiente original
+if sys.stdout is None:   # executável sem console (Windows): print() não pode quebrar
+    sys.stdout = sys.stderr = open(os.devnull, "w")
 
 
 def api_call(path, payload=None):
@@ -69,7 +74,6 @@ def cli_get(args):
 
 
 def selftest():
-    import shutil
     import subprocess
     ok = True
 
@@ -97,17 +101,32 @@ def selftest():
     except Exception as e:  # noqa: BLE001
         line("yt-dlp", False, str(e))
     line("deno", bool(media.deno_path()), media.deno_path() or "ausente (YouTube pode falhar)")
-    ff = shutil.which("ffmpeg")
+    ff = sysint.find_tool("ffmpeg")
     if ff:
         ver = subprocess.run([ff, "-version"], capture_output=True, text=True).stdout.split("\n")[0][:60]
     line("ffmpeg", bool(ff), ver if ff else "ausente (mesclar vídeo/áudio e MP3 não funcionam)")
     return 0 if ok else 1
 
 
+def forward_to_running(argv):
+    """Windows não tem a instância única do GApplication (D-Bus): usa a API local do LDM aberto."""
+    try:
+        api_call("/ping")
+    except OSError:
+        return False
+    urls = [a for a in argv if not a.startswith("--")]
+    for u in urls:
+        u = u[6:] if u.startswith("ldm://") else u
+        api_call("/video" if "--video" in argv else "/add", {"page_url": u} if "--video" in argv else {"url": u})
+    if "--tray" not in argv and not urls:
+        api_call("/show", {})
+    return True
+
+
 def main():
     argv = sys.argv[1:]
     if argv and argv[0] in ("get", "add", "video", "install", "selftest", "-h", "--help"):
-        p = argparse.ArgumentParser(prog="ldm.py", description="Linux Download Manager")
+        p = argparse.ArgumentParser(prog="ldm", description=APP_NAME)
         sub = p.add_subparsers(dest="cmd")
         g = sub.add_parser("get", help="baixar pelo terminal")
         g.add_argument("url")
@@ -128,7 +147,10 @@ def main():
         if args.cmd == "selftest":
             return selftest()
         if args.cmd == "install":
-            from ldm.autostart import install_menu_entry
+            from ldm.autostart import can_install_menu, install_menu_entry
+            if not can_install_menu():
+                print("No Windows o instalador já cria os atalhos do menu Iniciar.")
+                return 0
             print(f"Atalho criado: {install_menu_entry()}")
             return 0
         if args.cmd == "video":
@@ -151,6 +173,8 @@ def main():
     if os.environ.get("WAYLAND_DISPLAY") and "GDK_BACKEND" not in os.environ and os.environ.get("DISPLAY"):
         hostenv.remember("GDK_BACKEND")
         os.environ["GDK_BACKEND"] = "x11"
+    if sysint.IS_WIN and forward_to_running(argv):
+        return 0
     from ldm.gui.app import main as gui_main
     return gui_main([sys.argv[0]] + argv)
 

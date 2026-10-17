@@ -35,6 +35,7 @@ function fmt(n) {
 
   const p = await send({ op: "ping" });
   $("st").textContent = p && !p.error ? `conectado · v${p.version}` : "LDM fechado";
+  if (p && p.name) $("appname").textContent = p.name;   // "Linux" ou "Lunix" Download Manager
 
   const key = `media_${tab.id}`;
   const list = (await (B.storage.session ?? B.storage.local).get({ [key]: [] }))[key];

@@ -1,7 +1,6 @@
 """Diálogos de download: adicionar URL, informações do arquivo, progresso, conclusão, propriedades,
 lote, todos os links, prévia ZIP, duplicado e limitador de velocidade."""
 import shutil
-import subprocess
 import threading
 import time
 from pathlib import Path
@@ -11,7 +10,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk  # noqa: E402
 
-from .. import net  # noqa: E402
+from .. import net, sysint  # noqa: E402
 from . import theme  # noqa: E402
 from ..engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING  # noqa: E402
 from ..util import (batch_urls, ext_of, filename_from_headers, fmt_eta, fmt_rate, fmt_size,  # noqa: E402
@@ -391,22 +390,8 @@ class CompleteDialog(Gtk.Dialog):
         self._close()
 
 
-def open_path(p):
-    subprocess.Popen(["xdg-open", str(p)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
-def open_folder(p):
-    p = Path(p)
-    # Destaca o arquivo no gerenciador (Dolphin/Nautilus via FileManager1); senão só abre a pasta.
-    try:
-        from gi.repository import Gio
-        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-        bus.call_sync("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1",
-                      "org.freedesktop.FileManager1", "ShowItems",
-                      GLib.Variant("(ass)", ([Gio.File.new_for_path(str(p)).get_uri()], "")),
-                      None, Gio.DBusCallFlags.NONE, 3000, None)
-    except Exception:  # noqa: BLE001
-        open_path(p.parent)
+open_path = sysint.open_path
+open_folder = sysint.open_folder        # destaca o arquivo (Explorer /select, Dolphin/Nautilus)
 
 
 # ---------------------------------------------------------------- Propriedades

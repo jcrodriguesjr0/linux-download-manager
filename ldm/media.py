@@ -20,7 +20,7 @@ import time
 from collections import deque
 from pathlib import Path
 
-from . import engine, hostenv
+from . import engine, hostenv, sysint
 from .config import DATA_DIR
 from .engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED
 from .util import sanitize_filename, unique_path
@@ -34,7 +34,7 @@ DENO_LOCAL = DATA_DIR / "bin" / "deno"
 def deno_path():
     if DENO_LOCAL.exists():
         return str(DENO_LOCAL)
-    return shutil.which("deno")
+    return sysint.find_tool("deno")
 
 
 def bundled():
@@ -47,6 +47,13 @@ PROG = "LDMPROG"
 FILE_MARK = "LDMFILE"
 PROGRESS_TEMPLATE = (f"download:{PROG} %(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|"
                      "%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s|%(info.format_id)s")
+
+
+def split_cmd(cmd):
+    """Divide um comando digitado pelo usuário (no Windows: caminhos com \\ e entre aspas duplas)."""
+    if not sysint.IS_WIN:
+        return shlex.split(cmd)
+    return [x[1:-1] if len(x) > 1 and x[0] == x[-1] == '"' else x for x in shlex.split(cmd, posix=False)]
 
 
 class MediaError(Exception):
@@ -79,14 +86,18 @@ class Backend:
             box = self.s.get("distrobox_name") or "ubuntu-24-04"
             cands = []
             if self.s.get("ytdlp_cmd"):
-                cands.append(([], shlex.split(self.s["ytdlp_cmd"])))
+                cands.append(([], split_cmd(self.s["ytdlp_cmd"])))
+            if sysint.IS_WIN:                       # yt-dlp.exe que vem com o instalador (ou a cópia atualizada)
+                exe = sysint.find_tool("yt-dlp")
+                if exe:
+                    cands.append(([], [exe]))
             if bundled():
                 cands.append(([], [sys.executable, "-m", "yt_dlp"]))
             if VENV_YTDLP.exists():
                 cands.append(([], [str(VENV_YTDLP)]))
             if shutil.which("yt-dlp"):
                 cands.append(([], ["yt-dlp"]))
-            if shutil.which("distrobox") and VENV_YTDLP.exists():
+            if not sysint.IS_WIN and shutil.which("distrobox") and VENV_YTDLP.exists():
                 cands.append((["distrobox", "enter", box, "--"], [str(VENV_YTDLP)]))
             for launcher, exe in cands:
                 v = self._works(launcher + exe, launcher)
@@ -98,6 +109,8 @@ class Backend:
 
     def common_args(self):
         args = ["--no-colors", "--no-warnings" if not self.s.get("video_verbose") else "--verbose"]
+        if sysint.IS_WIN:
+            args += ["--encoding", "utf-8"]
         deno = deno_path()
         if deno:
             args += ["--js-runtimes", f"deno:{deno}"]
@@ -131,7 +144,7 @@ class Backend:
         return hostenv.host_env() if launcher else dict(os.environ)
 
     def ffmpeg(self):
-        exe = shutil.which("ffmpeg")
+        exe = sysint.find_tool("ffmpeg")
         if exe:
             return [exe]
         launcher = self.resolve()[0]
@@ -139,6 +152,8 @@ class Backend:
 
     def update(self):
         """Instala/atualiza yt-dlp[default,curl-cffi] no venv (na distrobox se necessário)."""
+        if sysint.IS_WIN:
+            return self._update_windows()
         if bundled():
             r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U", "--target", str(PYLIB),
                                 "--break-system-packages", "yt-dlp[default,curl-cffi]"],
@@ -155,6 +170,22 @@ class Backend:
         r = subprocess.run(launcher + ["sh", "-c", script], capture_output=True, text=True, timeout=900)
         self.resolve(refresh=True) if r.returncode == 0 else None
         return r.returncode == 0, (r.stdout + r.stderr).strip()[-600:]
+
+
+    def _update_windows(self):
+        """Windows: a pasta de instalação não é gravável; copia o yt-dlp.exe para os dados do usuário e roda -U."""
+        user_exe = sysint.data_dir() / "bin" / "yt-dlp.exe"
+        if not user_exe.exists():
+            src = sysint.find_tool("yt-dlp")
+            if not src:
+                return False, "yt-dlp.exe não encontrado na instalação"
+            user_exe.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, user_exe)
+        r = subprocess.run([str(user_exe), "-U"], capture_output=True, text=True, timeout=900)
+        ok = r.returncode == 0
+        if ok:
+            self.resolve(refresh=True)
+        return ok, (r.stdout + r.stderr).strip()[-600:]
 
 
 # =============================================================== cookies
@@ -343,7 +374,7 @@ class VideoDownloader:
         self.stop_ev.set()
         for d in list(self.subs):
             d.stop()
-        self._signal(signal.SIGINT)
+        self._interrupt()
 
     def downloaded(self):
         if self.mode == "native":
@@ -385,13 +416,18 @@ class VideoDownloader:
                 sd.sync()
 
     # ---- execução
-    def _signal(self, sig):
+    def _interrupt(self):
+        """Interrompe o yt-dlp; o progresso fica no .part e é retomado depois."""
+        if sysint.IS_WIN:
+            if self.proc and self.proc.poll() is None:
+                sysint.stop_process(self.proc)
+            return
         try:
             pid = int(self.pidfile.read_text().strip())
-            os.kill(pid, sig)
+            os.kill(pid, signal.SIGINT)
         except (OSError, ValueError):
             if self.proc and self.proc.poll() is None:
-                self.proc.send_signal(sig)
+                self.proc.send_signal(signal.SIGINT)
 
     def _run(self):
         it = self.item

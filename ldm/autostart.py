@@ -5,6 +5,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from . import APP_NAME, sysint
+
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = ROOT / "ldm.py"
 ICON_SRC = ROOT / "data" / "ldm.svg"
@@ -20,8 +22,34 @@ ICON_FILE = DATA / "icons" / "hicolor" / "scalable" / "apps" / f"{ICON_NAME}.svg
 EXT_EXPORT = HOME / "Documents" / "LinuxDownloadManager-extensao"
 
 
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"     # Windows: início com o sistema
+RUN_VALUE = "LDM"
+
+
 def appimage():
     return os.environ.get("APPIMAGE", "")
+
+
+def win_command():
+    exe = sys.executable if getattr(sys, "frozen", False) else f'{sys.executable}" "{LAUNCHER}'
+    return f'"{exe}" --tray'
+
+
+def _win_run(value=None, delete=False):
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_READ | winreg.KEY_SET_VALUE) as k:
+        if delete:
+            try:
+                winreg.DeleteValue(k, RUN_VALUE)
+            except FileNotFoundError:
+                pass
+        elif value is not None:
+            winreg.SetValueEx(k, RUN_VALUE, 0, winreg.REG_SZ, value)
+        else:
+            try:
+                return winreg.QueryValueEx(k, RUN_VALUE)[0]
+            except FileNotFoundError:
+                return None
 
 
 def exec_line(extra=""):
@@ -39,7 +67,7 @@ def install_icon():
 def desktop_entry(extra_args=""):
     return f"""[Desktop Entry]
 Type=Application
-Name=Linux Download Manager
+Name={APP_NAME}
 GenericName=Gerenciador de downloads
 Comment=Downloads acelerados com várias conexões, vídeos do navegador, filas e agendador
 Exec={exec_line(extra_args)}
@@ -52,6 +80,9 @@ StartupWMClass=ldm
 
 
 def set_enabled(on: bool):
+    if sysint.IS_WIN:
+        _win_run(win_command()) if on else _win_run(delete=True)
+        return
     if on:
         install_icon()
         AUTOSTART_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +92,8 @@ def set_enabled(on: bool):
 
 
 def is_enabled() -> bool:
+    if sysint.IS_WIN:
+        return bool(_win_run())
     return AUTOSTART_FILE.exists()
 
 
@@ -69,7 +102,9 @@ def sync(want: bool):
     para o executável em uso (a AppImage pode ter mudado de pasta ou de versão)."""
     try:
         if want:
-            if not is_enabled() or AUTOSTART_FILE.read_text() != desktop_entry("--tray "):
+            current = _win_run() if sysint.IS_WIN else (AUTOSTART_FILE.read_text() if is_enabled() else None)
+            expected = win_command() if sysint.IS_WIN else desktop_entry("--tray ")
+            if current != expected:
                 set_enabled(True)
         elif is_enabled():
             set_enabled(False)
@@ -78,6 +113,8 @@ def sync(want: bool):
 
 
 def target() -> str:
+    if sysint.IS_WIN:
+        return win_command()
     return appimage() or str(LAUNCHER)
 
 
@@ -90,10 +127,14 @@ def install_menu_entry():
     return MENU_FILE
 
 
+def can_install_menu() -> bool:
+    return not sysint.IS_WIN        # no Windows o instalador cria os atalhos do menu Iniciar
+
+
 def extension_dir() -> Path:
     """Pasta da extensão para carregar no navegador. Dentro da AppImage o caminho muda a cada execução,
     então a extensão é copiada para Documentos."""
-    if not appimage():
+    if sysint.IS_WIN or not appimage():      # no Windows a pasta da instalação é fixa
         return EXT_SRC
     return export_extension()
 

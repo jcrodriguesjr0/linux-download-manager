@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from . import net
+from . import net, sysint
 from .config import DOWNLOADS_FILE, QUEUES_FILE, Settings, atomic_write_json
 from .engine import (ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED, ST_QUEUED,
                      Downloader)
@@ -309,9 +309,7 @@ class Manager:
     def _play(event_id, enabled):
         if not enabled:
             return
-        exe = shutil.which("canberra-gtk-play")
-        if exe:
-            subprocess.Popen([exe, "-i", event_id], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sysint.play_sound(event_id)
 
     # ---------- limitador de velocidade ----------
     def apply_speed_limit(self, on: bool, kbps: int | None = None):
@@ -444,5 +442,4 @@ class Manager:
     # ---------- ações de energia (opções ao concluir) ----------
     @staticmethod
     def power_off(force=False):
-        cmd = ["systemctl", "poweroff"] + (["-i"] if force else [])
-        subprocess.Popen(cmd)
+        sysint.power_off(force)

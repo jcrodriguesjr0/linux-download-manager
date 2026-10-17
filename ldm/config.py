@@ -2,30 +2,21 @@
 import json
 import os
 import secrets
-import subprocess
 import threading
 from pathlib import Path
 
+from . import sysint
+
 HOME = Path.home()
-CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "ldm"
-DATA_DIR = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "ldm"
+CONFIG_DIR = sysint.config_dir()
+DATA_DIR = sysint.data_dir()
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
 DOWNLOADS_FILE = DATA_DIR / "downloads.json"
 QUEUES_FILE = DATA_DIR / "queues.json"
 GRABBER_DIR = DATA_DIR / "grabber_projects"
 
 
-def xdg_download_dir() -> Path:
-    try:
-        out = subprocess.run(["xdg-user-dir", "DOWNLOAD"], capture_output=True, text=True, timeout=2).stdout.strip()
-        if out and out != str(HOME):
-            return Path(out)
-    except Exception:
-        pass
-    return HOME / "Downloads"
-
-
-DOWNLOAD_ROOT = xdg_download_dir()
+DOWNLOAD_ROOT = sysint.download_dir()
 
 # Extensões padrão por categoria (as mesmas que os gerenciadores de download clássicos usam).
 DEFAULT_CATEGORIES = [

@@ -10,7 +10,7 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import VERSION
+from . import APP_NAME, VERSION
 from .util import ext_of, match_ext, match_site
 
 EXT_ORIGINS = ("chrome-extension://", "moz-extension://", "extension://")
@@ -85,7 +85,7 @@ class Api:
                     return self._send(403, {"error": "forbidden"})
                 if self.path == "/ping":
                     return self._send(200, {
-                        "app": "ldm", "version": VERSION, "capture": api.m.s["browser_capture"], "video": True,
+                        "app": "ldm", "name": APP_NAME, "version": VERSION, "capture": api.m.s["browser_capture"], "video": True,
                         "keys": {"prevent": api.m.s["capture_prevent_key"], "force": api.m.s["capture_force_key"]},
                         "rules": api.m.s["page_rules"] or None})
                 if self.path == "/status":

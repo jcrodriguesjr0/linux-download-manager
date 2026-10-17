@@ -7,7 +7,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GdkPixbuf, GLib, Gtk  # noqa: E402
 
-from .. import media  # noqa: E402
+from .. import APP_NAME, media  # noqa: E402
 from ..util import fmt_eta, fmt_size, looks_like_url  # noqa: E402
 from .dialogs import queue_options  # noqa: E402
 from .widgets import check, combo, entry, folder_entry, message, scrolled  # noqa: E402
@@ -25,7 +25,7 @@ def is_video_page(url: str) -> bool:
 
 class VideoDialog(Gtk.Window):
     def __init__(self, win, payload):
-        super().__init__(title="Baixar vídeo - Linux Download Manager")
+        super().__init__(title=f"Baixar vídeo - {APP_NAME}")
         self.w, self.m, self.p = win, win.m, dict(payload)
         self.info = None
         self.folder_touched = False

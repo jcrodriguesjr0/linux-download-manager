@@ -80,7 +80,7 @@
       .pill[data-state=err]{border-color:#ef4444;box-shadow:0 0 14px rgba(239,68,68,.45)}
       .pill[data-state=busy] svg.ic{animation:pulse .8s ease-in-out infinite alternate}
       @keyframes pulse{from{opacity:1}to{opacity:.35}}</style>
-      <div class="pill" title="Linux Download Manager">
+      <div class="pill" title="LDM: baixar este vídeo">
         <button class="main"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="20.5" width="18" height="2.5" rx="1.25" fill="#F59E0B"/><rect x="5" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><rect x="10.5" y="0.5" width="3" height="10" rx="1.5" fill="#F59E0B"/><rect x="16" y="2" width="3" height="8.5" rx="1.5" fill="#FBBF24"/><path d="M12 18 3.5 9.5h17z" fill="#F59E0B"/></svg><span>Baixar este vídeo</span></button>
         <span class="div hid"></span>
         <button class="q hid" title="Escolher a qualidade no LDM"><b></b><svg viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="#F59E0B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -181,13 +181,13 @@
       res = { error: String(err) };
     }
     const ok = res && !res.error;
-    label.textContent = ok ? "Enviado ao LDM ✓" : "Abra o Linux Download Manager";
+    label.textContent = ok ? "Enviado ao LDM ✓" : "Abra o LDM (Download Manager)";
     pill.dataset.state = ok ? "ok" : "err";          // no modo mini a cor da borda mostra o resultado
     pill.title = label.textContent;
     setTimeout(() => {
       label.textContent = "Baixar este vídeo";
       delete pill.dataset.state;
-      pill.title = "Linux Download Manager: baixar este vídeo";
+      pill.title = "LDM: baixar este vídeo";
     }, 3000);
   }
 })();

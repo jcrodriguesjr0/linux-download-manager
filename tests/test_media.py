@@ -1,6 +1,7 @@
 """Testes do grabber de vídeo com um yt-dlp falso (sem rede externa)."""
 import os
 import shlex
+import subprocess
 import sys
 import tempfile
 import threading
@@ -15,7 +16,8 @@ sys.path.insert(0, str(ROOT / "tests"))
 from ldm import engine, media, net  # noqa: E402
 from test_engine import Handler, ThreadingHTTPServer  # noqa: E402
 
-FAKE = f"{shlex.quote(sys.executable)} {shlex.quote(str(ROOT / 'tests/fixtures/fake_ytdlp.py'))}"
+_FAKE_ARGS = [sys.executable, str(ROOT / "tests" / "fixtures" / "fake_ytdlp.py")]
+FAKE = subprocess.list2cmdline(_FAKE_ARGS) if os.name == "nt" else " ".join(shlex.quote(a) for a in _FAKE_ARGS)
 
 
 class MediaTest(unittest.TestCase):

@@ -1,4 +1,4 @@
-"""Janela principal do Linux Download Manager (GTK3), na identidade "Fluxo Segmentado":
+"""Janela principal do LDM (GTK3), na identidade "Fluxo Segmentado":
 barra de título com as ações principais + menu, lateral de categorias/filas, lista com o mapa de conexões
 ao vivo e rodapé com a velocidade global."""
 import shutil
@@ -12,7 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from .. import APP_ID, APP_NAME, VERSION, util  # noqa: E402
+from .. import APP_ID, APP_NAME, VERSION, sysint, util  # noqa: E402
 from ..engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED, ST_QUEUED  # noqa: E402
 from ..i18n import _, set_language  # noqa: E402
 from ..manager import Manager  # noqa: E402
@@ -180,7 +180,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
         h = self._submenu(bar, "Aj_uda")
         self._mi(h, "Extensão do navegador...", self.browser_extension)
-        self._mi(h, "Adicionar ao menu de aplicativos", self.install_menu)
+        from .. import autostart
+        if autostart.can_install_menu():
+            self._mi(h, "Adicionar ao menu de aplicativos", self.install_menu)
         h.append(Gtk.SeparatorMenuItem())
         self._mi(h, "Sobre o LDM", self.about)
         bar.show_all()
@@ -636,10 +638,7 @@ class MainWindow(Gtk.ApplicationWindow):
         d.show_all()
 
     def notify(self, title, body):
-        exe = shutil.which("notify-send")
-        if exe:
-            subprocess.Popen([exe, "-a", APP_NAME, "-i", ICON, title, body],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sysint.notify(APP_NAME, ICON, title, body)
 
     # ------------------------------------------------------------------ seleção
     def selected_ids(self):
@@ -859,7 +858,8 @@ class MainWindow(Gtk.ApplicationWindow):
             "2. Ligue o <b>Modo do desenvolvedor</b>.\n"
             "3. Clique em <b>Carregar sem compactação</b> e escolha a pasta:\n"
             f"<tt>{GLib.markup_escape_text(str(ext))}</tt>\n\n"
-            "Firefox: about:debugging → Este Firefox → Carregar extensão temporária → manifest.json.")
+            "Firefox: about:debugging → Este Firefox → Carregar extensão temporária → manifest.json.\n"
+            "Edge: em edge://extensions o botão fica na barra lateral, “Modo de desenvolvedor”.")
         d.add_buttons("Abrir pasta", 1, "Abrir no Chrome", 2, "Abrir no Edge", 3, "Fechar", Gtk.ResponseType.CLOSE)
         while True:
             r = d.run()
@@ -875,6 +875,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @staticmethod
     def _open_browser_extensions(flatpak_id, binary):
         url = "chrome://extensions"
+        if sysint.IS_WIN:   # "start" acha o navegador pelo registro (App Paths)
+            edge = binary == "microsoft-edge"
+            subprocess.Popen(["cmd", "/c", "start", "", "msedge" if edge else "chrome", "edge://extensions" if edge else url])
+            return
         if shutil.which(binary):
             subprocess.Popen([binary, url])
         elif shutil.which("flatpak"):
@@ -979,7 +983,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
 class LdmApp(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        flags = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
+        if sysint.IS_WIN:   # sem D-Bus no Windows; a instância única é feita pela API local (ldm.py)
+            flags |= Gio.ApplicationFlags.NON_UNIQUE
+        super().__init__(application_id=APP_ID, flags=flags)
         self.m = None
         self.win = None
         self.api = None

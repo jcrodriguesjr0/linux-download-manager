@@ -4,6 +4,7 @@ A base é o Adwaita (embutido em todo GTK 3), então a aparência não depende d
 """
 import ctypes
 import ctypes.util
+import sys
 from pathlib import Path
 
 from gi.repository import Gdk, Gtk
@@ -25,8 +26,8 @@ DARK = {"base": "#141316", "surface": "#1E1A1E", "elevated": "#272228", "border"
 LIGHT = {"base": "#FFFFFF", "surface": "#F8FAFC", "elevated": "#FFFFFF", "border": "#E2E8F0",
          "text": "#0F172A", "muted": "#64748B", "channel": "#E9E4E7", "divider": "#FFFFFF"}
 
-UI_FONT = "Inter, Noto Sans, Cantarell, sans-serif"
-MONO_FONT = "JetBrains Mono, Hack, DejaVu Sans Mono, monospace"
+UI_FONT = "Inter, Segoe UI, Noto Sans, Cantarell, sans-serif"
+MONO_FONT = "JetBrains Mono, Consolas, Hack, DejaVu Sans Mono, monospace"
 
 _provider = None
 _dark = True
@@ -46,7 +47,24 @@ def is_dark():
 
 
 def register_fonts():
-    """Disponibiliza Inter e JetBrains Mono só para este processo (fontconfig), sem instalar no sistema."""
+    """Disponibiliza Inter e JetBrains Mono só para este processo, sem instalar no sistema."""
+    fonts = sorted((DATA / "fonts").glob("*.ttf"))
+    try:                     # Pango ≥ 1.56: funciona em qualquer backend (fontconfig, Windows/DirectWrite)
+        from gi.repository import PangoCairo
+        fm = PangoCairo.FontMap.get_default()
+        if hasattr(fm, "add_font_file"):
+            for f in fonts:
+                fm.add_font_file(str(f))
+            return
+    except Exception:  # noqa: BLE001
+        pass
+    if sys.platform == "win32":
+        try:
+            for f in fonts:  # FR_PRIVATE: só este processo enxerga a fonte
+                ctypes.windll.gdi32.AddFontResourceExW(str(f), 0x10, 0)
+        except Exception:  # noqa: BLE001
+            pass
+        return
     try:
         lib = ctypes.CDLL(ctypes.util.find_library("fontconfig") or "libfontconfig.so.1")
         lib.FcConfigAppFontAddDir.argtypes = [ctypes.c_void_p, ctypes.c_char_p]

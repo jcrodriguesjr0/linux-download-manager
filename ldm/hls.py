@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urljoin
 
-from . import net
+from . import net, sysint
 from .engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING, ST_ERROR, ST_PAUSED
 from .util import sanitize_filename, unique_path
 
@@ -144,7 +144,7 @@ class HlsDownloader:
             raise RuntimeError("Playlist HLS vazia")
         self.total_segs = len(segs)
         it["duration"] = dur
-        ffmpeg = shutil.which("ffmpeg")
+        ffmpeg = sysint.find_tool("ffmpeg")
         it["status"] = ST_DOWNLOADING
         if encrypted:
             if not ffmpeg:

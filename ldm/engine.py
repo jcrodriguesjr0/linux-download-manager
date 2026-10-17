@@ -19,6 +19,8 @@ from pathlib import Path
 from . import net
 from .util import filename_from_headers, unique_path
 
+_HAS_PWRITE = hasattr(os, "pwrite")
+
 CHUNK = 64 * 1024
 
 ST_QUEUED, ST_CONNECTING, ST_DOWNLOADING, ST_PAUSED, ST_COMPLETE, ST_ERROR = (
@@ -61,6 +63,7 @@ class Downloader:
         self.on_finish = on_finish
         self.set_mtime = set_mtime
         self.lock = threading.RLock()
+        self.io_lock = threading.Lock()
         self.stop_ev = threading.Event()
         self.segments: list[Segment] = []
         self.workers: dict[int, dict] = {}
@@ -109,6 +112,14 @@ class Downloader:
             conns = [{"id": wid, "seg": w["seg"], "state": w["state"], "err": w.get("err", "")}
                      for wid, w in self.workers.items()]
         return {"downloaded": d, "rate": max(0, rate), "connections": conns}
+
+    def _pwrite(self, data, pos):
+        if _HAS_PWRITE:
+            os.pwrite(self.fd, data, pos)
+        else:                      # Windows: sem pwrite; posiciona e escreve sob trava
+            with self.io_lock:
+                os.lseek(self.fd, pos, os.SEEK_SET)
+                os.write(self.fd, data)
 
     def segment_map(self):
         """Lista (start, pos, end) para desenhar o mapa de conexões como no diálogo de progresso do IDM."""
@@ -202,7 +213,7 @@ class Downloader:
             first_stream = s
             probe_seg = self.segments[0]
 
-        self.fd = os.open(self._temp_path(), os.O_RDWR | os.O_CREAT, 0o644)
+        self.fd = os.open(self._temp_path(), os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o644)
         if it.get("size", -1) > 0 and it.get("resumable"):
             os.ftruncate(self.fd, it["size"])
         self._set(status=ST_DOWNLOADING)
@@ -380,7 +391,7 @@ class Downloader:
                     if len(data) > allowed:
                         data = data[:allowed]
                 pos = seg.pos
-            os.pwrite(self.fd, data, pos)
+            self._pwrite(data, pos)
             with self.lock:
                 seg.pos = pos + len(data)
                 done = seg.end is not None and seg.pos > seg.end
