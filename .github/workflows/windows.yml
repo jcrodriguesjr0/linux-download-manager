@@ -52,21 +52,32 @@ jobs:
       - name: Teste do instalado (instala, abre, API responde, captura de tela)
         shell: pwsh
         run: |
-          $setup = Get-ChildItem build\win\out\*-Setup.exe | Select-Object -First 1
+          $out = "$pwd\build\win\out"
+          $setup = Get-ChildItem "$out\*-Setup.exe" | Select-Object -First 1
           Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/CURRENTUSER","/NORESTART" -Wait
           $exe = "$env:LOCALAPPDATA\Programs\Lunix Download Manager\LDM.exe"
           if (-not (Test-Path $exe)) { Write-Error "não instalou em $exe"; exit 1 }
           $p = Start-Process $exe -PassThru
-          Start-Sleep -Seconds 25
-          $ping = Invoke-RestMethod -Uri http://127.0.0.1:9614/ping -Headers @{ "X-LDM-Client" = "1" }
-          $ping | ConvertTo-Json | Write-Output
-          if ($ping.name -ne "Lunix Download Manager") { Write-Error "API não respondeu como Lunix"; exit 1 }
+          $ok = $false
+          for ($i = 0; $i -lt 30 -and -not $ok; $i++) {
+            Start-Sleep -Seconds 2
+            try {
+              $ping = Invoke-RestMethod -Uri http://127.0.0.1:9614/ping -Headers @{ "X-LDM-Client" = "1" } -TimeoutSec 3
+              $ping | ConvertTo-Json -Compress | Write-Output
+              $ok = $ping.name -eq "Lunix Download Manager"
+            } catch { }
+          }
+          Start-Sleep -Seconds 4
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
           $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
           [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
-          $bmp.Save("$pwd\build\win\out\screenshot.png")
-          Stop-Process -Id $p.Id -Force
+          $bmp.Save("$out\screenshot.png")
+          Write-Output "processo ainda aberto: $(-not $p.HasExited)  código de saída: $($p.ExitCode)"
+          $log = "$env:LOCALAPPDATA\LDM\ldm.log"
+          if (Test-Path $log) { Copy-Item $log "$out\ldm.log"; Get-Content $log -Tail 80 }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          if (-not $ok) { Write-Error "o LDM instalado não respondeu na API"; exit 1 }
 
       - uses: actions/upload-artifact@v4
         if: always()

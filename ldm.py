@@ -26,8 +26,15 @@ if sysint.IS_WIN:
     sysint.install_windows_defaults()   # filhos sem janela de console, saída em UTF-8
 else:
     hostenv.install()   # programas do sistema abertos pelo LDM recebem o ambiente original
-if sys.stdout is None:   # executável sem console (Windows): print() não pode quebrar
-    sys.stdout = sys.stderr = open(os.devnull, "w")
+if sys.stdout is None:   # executável sem console (Windows): erros vão para %LOCALAPPDATA%\LDM\ldm.log
+    import faulthandler
+    _log = sysint.data_dir() / "ldm.log"
+    _log.parent.mkdir(parents=True, exist_ok=True)
+    if _log.exists() and _log.stat().st_size > 2_000_000:
+        _log.replace(_log.with_suffix(".log.1"))
+    sys.stdout = sys.stderr = open(_log, "a", buffering=1, encoding="utf-8", errors="replace")
+    print(f"\n=== {time.strftime('%Y-%m-%d %H:%M:%S')} {APP_NAME} ===")
+    faulthandler.enable(sys.stderr)
 
 
 def api_call(path, payload=None):
