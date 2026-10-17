@@ -37,7 +37,7 @@ chmod +x Linux_Download_Manager-1.4.0-x86_64.AppImage
 ./Linux_Download_Manager-1.4.0-x86_64.AppImage selftest   # diagnóstico dos componentes embutidos
 ```
 
-Depois, instale a extensão do navegador (veja abaixo).
+Depois, instale a extensão do navegador: [passo a passo](#extensão-do-navegador).
 
 ## Funcionalidades
 
@@ -91,16 +91,70 @@ Modo claro: ![Modo claro](docs/screenshots/main-light.png)
 
 ## Extensão do navegador
 
-A extensão fica em `browser_extension/`. Na AppImage, **Ajuda → Extensão do navegador** copia a extensão para `~/Documents/LinuxDownloadManager-extensao` e abre o navegador.
+É a extensão que faz o LDM capturar downloads e mostrar o botão **"Baixar este vídeo"** sobre os players. Ela ainda não está nas lojas dos navegadores, então a instalação é manual, uma vez só. Leva uns dois minutos.
 
-- **Chrome / Edge / Chromium:**
-  1. Abra `chrome://extensions` e ligue o **Modo do desenvolvedor**.
-  2. Clique em **Carregar sem compactação** e escolha a pasta da extensão.
-- **Firefox:**
-  1. Abra `about:debugging` → **Este Firefox** → **Carregar extensão temporária**.
-  2. Escolha o `manifest.json`.
+### Passo 1: encontre a pasta da extensão
 
-A extensão conversa com uma API local em `127.0.0.1:9614`, então funciona também com navegadores Flatpak, que não conseguem executar hosts de native messaging. A API só aceita requisições de origem `chrome-extension://` ou `moz-extension://`, ou de clientes locais que enviam o cabeçalho `X-LDM-Client` sem `Origin`. Páginas web ficam bloqueadas.
+O jeito mais fácil é pelo próprio programa: **menu ☰ → Ajuda → Extensão do navegador...**. A janela mostra a pasta exata, e o botão **Abrir pasta** abre ela.
+
+| Como você usa o LDM | Pasta da extensão |
+|---|---|
+| AppImage (Linux) | `~/Documents/LinuxDownloadManager-extensao`. O menu acima cria a pasta, então abra o menu uma vez antes. |
+| Instalador do Windows | `%LOCALAPPDATA%\Programs\Lunix Download Manager\_internal\browser_extension` |
+| Windows instalado "para todos os usuários" | `C:\Program Files\Lunix Download Manager\_internal\browser_extension` |
+| Zip portátil do Windows | `<pasta descompactada>\_internal\browser_extension` |
+| Código-fonte | `browser_extension/` deste repositório |
+
+Também dá para baixar `ldm-browser-extension-<versão>.zip` na [página de releases](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) e descompactar numa pasta sua.
+
+> **Não mova nem apague a pasta depois.** O navegador carrega a extensão dessa pasta toda vez que abre; se ela sumir, a extensão para de funcionar.
+
+### Passo 2: instale no navegador
+
+**Google Chrome, Brave, Chromium, Vivaldi, Opera**
+1. Digite `chrome://extensions` na barra de endereço e tecle Enter. No Brave também funciona `brave://extensions`.
+2. Ligue o **Modo do desenvolvedor**, no botão do canto superior direito.
+3. Clique em **Carregar sem compactação**.
+4. Escolha a pasta da extensão do passo 1 (a própria pasta, a que contém o `manifest.json`) e confirme.
+5. Clique no ícone de quebra-cabeça da barra e **fixe** o "Linux Download Manager" (ou "Lunix") para o ícone ficar sempre visível.
+
+**Microsoft Edge**
+1. Acesse `edge://extensions`.
+2. Ligue o **Modo de desenvolvedor**. Nas versões novas ele fica na barra lateral esquerda; se ela estiver escondida, clique em ☰ no canto superior esquerdo.
+3. Clique em **Carregar sem pacote** (o nome varia com a versão: *Carregar descompactada* ou, em inglês, *Load unpacked*) e escolha a pasta da extensão.
+4. Fixe o ícone pelo quebra-cabeça, como acima.
+
+**Firefox**
+1. Acesse `about:debugging#/runtime/this-firefox`.
+2. Clique em **Carregar extensão temporária...**.
+3. Escolha o arquivo `manifest.json` dentro da pasta da extensão.
+
+> O Firefox só aceita extensões não assinadas de forma temporária: **ela some quando o Firefox é reiniciado** e precisa ser carregada de novo. A versão permanente depende de publicar no addons.mozilla.org, o que está nos planos.
+
+### Passo 3: confira se funcionou
+
+1. Abra o LDM.
+2. Clique no ícone do LDM na barra do navegador: o popup deve mostrar **"conectado · v1.4.0"**. Se aparecer **"LDM fechado"**, o programa não está aberto.
+3. Abra qualquer página com vídeo e passe o mouse sobre o player: o botão **"Baixar este vídeo"** aparece no canto superior direito do vídeo.
+4. Baixe qualquer arquivo de 50 MB ou mais: o LDM assume o download.
+
+### Opções do popup
+- **Capturar downloads do navegador:** liga ou desliga a captura automática.
+- **Mostrar "Baixar este vídeo" sobre os players:** mostra ou esconde o botão nos vídeos.
+- **Tamanho do botão:** **Completo** (ícone, texto e resolução) ou **Mini** (só o ícone, num círculo pequeno).
+- **Alt+clique** num link deixa o navegador baixar; **Ctrl+Alt+clique** força o LDM.
+
+### Atualizar
+Depois de instalar uma versão nova do LDM, abra a página de extensões (`chrome://extensions` ou `edge://extensions`) e clique em **↻ Recarregar** no cartão do LDM; depois recarregue as abas abertas. Na AppImage, abra **☰ → Ajuda → Extensão do navegador** uma vez para a pasta ser atualizada.
+
+### Problemas comuns
+- **O navegador baixou em vez do LDM:** o arquivo tinha menos de 50 MB (regra padrão, que se muda em **Opções → Tipos de arquivo**), o LDM estava fechado ou a captura está desligada no popup.
+- **Aviso de "extensões do modo de desenvolvedor":** é normal em extensões instaladas à mão; mantenha ativada.
+- **Navegadores Flatpak (SteamOS, Fedora Silverblue...):** use a pasta `~/Documents/LinuxDownloadManager-extensao`. O navegador Flatpak consegue ler Documentos, mas não o interior da AppImage.
+- **Porta:** a extensão conversa com o LDM em `127.0.0.1:9614`. Se você mudar a porta no LDM, mude também no popup.
+
+### Como ela conversa com o LDM
+A extensão usa uma API local em `127.0.0.1:9614`, por isso funciona também com navegadores Flatpak, que não conseguem executar hosts de native messaging. A API só aceita requisições de origem `chrome-extension://` ou `moz-extension://`, ou de clientes locais que enviam o cabeçalho `X-LDM-Client` sem `Origin`. Páginas web ficam bloqueadas.
 
 ## Rodar pelo código-fonte
 

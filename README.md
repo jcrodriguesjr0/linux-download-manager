@@ -39,7 +39,7 @@ chmod +x Linux_Download_Manager-1.4.0-x86_64.AppImage
 ./Linux_Download_Manager-1.4.0-x86_64.AppImage selftest   # check the bundled components
 ```
 
-Then install the browser extension (see below).
+Then install the browser extension: [step-by-step guide](#browser-extension).
 
 ## Features
 
@@ -93,16 +93,70 @@ Light mode: ![Light mode](docs/screenshots/main-light.png)
 
 ## Browser extension
 
-The extension lives in `browser_extension/`. Inside the AppImage, **Help → Browser extension** copies it to `~/Documents/LinuxDownloadManager-extensao` and opens the browser.
+The extension is what makes LDM capture downloads and show the **"Download this video"** button on players. It is not on the browser stores yet, so it is installed manually, once. It takes about two minutes.
 
-- **Chrome / Edge / Chromium:**
-  1. Open `chrome://extensions` and turn on **Developer mode**.
-  2. Click **Load unpacked** and select the extension folder.
-- **Firefox:**
-  1. Open `about:debugging` → **This Firefox** → **Load Temporary Add-on**.
-  2. Select `manifest.json`.
+### Step 1: find the extension folder
 
-The extension talks to a local API on `127.0.0.1:9614`, so it also works with Flatpak browsers, which cannot run native-messaging hosts. The API only accepts requests from `chrome-extension://` or `moz-extension://` origins, or from local clients that send the `X-LDM-Client` header without an `Origin`. Web pages are blocked.
+The easiest way is from the program itself: **☰ menu → Ajuda (Help) → Extensão do navegador... (Browser extension)**. The window shows the exact folder, and **Abrir pasta** opens it.
+
+| How you run LDM | Extension folder |
+|---|---|
+| Linux AppImage | `~/Documents/LinuxDownloadManager-extensao`. The menu above creates it, so open it once first. |
+| Windows installer | `%LOCALAPPDATA%\Programs\Lunix Download Manager\_internal\browser_extension` |
+| Windows, installed "for all users" | `C:\Program Files\Lunix Download Manager\_internal\browser_extension` |
+| Windows portable zip | `<unzipped folder>\_internal\browser_extension` |
+| From source | `browser_extension/` in this repository |
+
+You can also download `ldm-browser-extension-<version>.zip` from the [releases page](https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest) and unzip it into a folder of your own.
+
+> **Keep the folder where it is.** The browser loads the extension from that folder every time; if you move or delete it, the extension stops working.
+
+### Step 2: install it in the browser
+
+**Google Chrome, Brave, Chromium, Vivaldi, Opera**
+1. Type `chrome://extensions` in the address bar and press Enter. Brave also accepts `brave://extensions`.
+2. Turn on **Developer mode**, the switch in the top-right corner.
+3. Click **Load unpacked**.
+4. Select the extension folder from step 1 (the folder itself, the one that contains `manifest.json`) and confirm.
+5. Click the puzzle-piece icon in the toolbar and **pin** "Linux Download Manager" (or "Lunix") to keep its icon visible.
+
+**Microsoft Edge**
+1. Go to `edge://extensions`.
+2. Turn on **Developer mode**. In recent versions it is in the left sidebar; if the sidebar is hidden, click ☰ at the top left.
+3. Click **Load unpacked** and select the extension folder.
+4. Pin it with the puzzle-piece icon, as above.
+
+**Firefox**
+1. Go to `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on…**.
+3. Select the `manifest.json` file inside the extension folder.
+
+> Firefox only allows unsigned extensions temporarily: **it disappears when Firefox restarts** and has to be loaded again. A permanent version needs to be published on addons.mozilla.org, which is planned.
+
+### Step 3: check that it works
+
+1. Open LDM.
+2. Click the LDM icon in the browser toolbar: the popup should say **"conectado · v1.4.0"** (connected). If it says **"LDM fechado"**, LDM is not running.
+3. Open any page with a video and hover over the player: the **"Baixar este vídeo"** button appears in the top-right corner of the video.
+4. Download any file of 50 MB or more: LDM takes over the download.
+
+### Options in the popup
+- **Capturar downloads do navegador:** turns automatic capture on or off.
+- **Mostrar "Baixar este vídeo" sobre os players:** shows or hides the button on videos.
+- **Tamanho do botão:** **Completo** (icon, text and resolution) or **Mini** (icon only, in a small circle).
+- **Alt+click** on a link lets the browser download it; **Ctrl+Alt+click** forces LDM.
+
+### Updating
+After installing a new version of LDM, open the extensions page (`chrome://extensions` or `edge://extensions`) and click **↻ Reload** on the LDM card, then reload the open tabs. For the AppImage, open **☰ → Ajuda → Extensão do navegador** once so the folder is updated.
+
+### Troubleshooting
+- **The browser downloaded instead of LDM:** the file was smaller than 50 MB (default rule, changed in **Options → Tipos de arquivo**), LDM was closed, or capture is off in the popup.
+- **"Developer mode extensions" warning:** this is normal for extensions installed by hand; click to keep it enabled.
+- **Flatpak browsers (SteamOS, Fedora Silverblue…):** use the `~/Documents/LinuxDownloadManager-extensao` folder. Flatpak browsers can read Documents but not the inside of the AppImage.
+- **Port:** the extension talks to LDM on `127.0.0.1:9614`. If you change the port in LDM, change it in the popup too.
+
+### How it talks to LDM
+The extension uses a local API on `127.0.0.1:9614`, so it also works with Flatpak browsers, which cannot run native-messaging hosts. The API only accepts requests from `chrome-extension://` or `moz-extension://` origins, or from local clients that send the `X-LDM-Client` header without an `Origin`. Web pages are blocked.
 
 ## Running from source
 
