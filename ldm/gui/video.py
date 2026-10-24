@@ -10,7 +10,7 @@ from gi.repository import GdkPixbuf, GLib, Gtk  # noqa: E402
 from .. import APP_NAME, media  # noqa: E402
 from ..util import fmt_eta, fmt_size, looks_like_url  # noqa: E402
 from .dialogs import queue_options  # noqa: E402
-from .widgets import check, combo, entry, folder_entry, message, scrolled  # noqa: E402
+from .widgets import check, combo, entry, folder_entry, message, raise_popup, scrolled  # noqa: E402
 
 VIDEO_HOSTS = ("youtube.com", "youtu.be", "vimeo.com", "dailymotion.com", "twitch.tv", "tiktok.com", "instagram.com",
                "facebook.com", "fb.watch", "x.com", "twitter.com", "reddit.com", "bilibili.com", "soundcloud.com",
@@ -106,8 +106,7 @@ class VideoDialog(Gtk.Window):
         self.go_b.set_sensitive(False)
 
         self._add_sniffed()
-        self.show_all()
-        self.present()
+        raise_popup(self)
         threading.Thread(target=self._probe, daemon=True).start()
 
     # ---------------------------------------------------------------- análise

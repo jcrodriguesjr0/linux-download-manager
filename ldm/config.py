@@ -51,6 +51,8 @@ DEFAULTS = {
     "exception_sites": "",
     "exception_addresses": "",
     "show_file_info_dialog": True,
+    "ext_prompt": True,                # aviso "instale a extensão" ao abrir (até a extensão conectar)
+    "ext_seen": False,                 # a extensão já falou com este LDM
     "show_complete_dialog": True,
     "show_progress_dialog": True,
     "start_immediately_while_info": False,

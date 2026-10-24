@@ -917,6 +917,35 @@ class MainWindow(Gtk.ApplicationWindow):
                 break
         d.destroy()
 
+    EXT_TUTORIAL = "https://github.com/jcrodriguesjr0/linux-download-manager/blob/main/README.pt-BR.md#extensão-do-navegador"
+
+    def ext_prompt(self):
+        """Aviso de primeira execução: sem a extensão o LDM não captura downloads nem vídeos do navegador."""
+        if not self.m.s["ext_prompt"] or self.m.s["ext_seen"]:
+            return False
+        d = Gtk.MessageDialog(transient_for=self, modal=True, message_type=Gtk.MessageType.INFO,
+                              buttons=Gtk.ButtonsType.NONE, text="Instale a extensão do navegador")
+        d.format_secondary_markup(
+            f"Sem ela o {GLib.markup_escape_text(APP_NAME)} não recebe os downloads nem o botão de vídeo do "
+            "navegador. A extensão já vem junto com o programa e funciona no Chrome, Edge, Brave e Firefox.\n\n"
+            f"Passo a passo: <a href=\"{self.EXT_TUTORIAL}\">tutorial no GitHub</a>")
+        never = Gtk.CheckButton(label="Não mostrar novamente")
+        d.get_message_area().pack_start(never, False, False, 6)
+        d.add_buttons("Agora não", Gtk.ResponseType.CLOSE, "Tutorial", 2, "Instalar agora", 1)
+        d.set_default_response(1)
+        d.get_widget_for_response(1).get_style_context().add_class("suggested-action")
+        d.show_all()
+        r = d.run()
+        if never.get_active():
+            self.m.s["ext_prompt"] = False
+            self.m.s.save()
+        d.destroy()
+        if r == 1:
+            self.browser_extension()
+        elif r == 2:
+            D.open_path(self.EXT_TUTORIAL)
+        return False
+
     @staticmethod
     def _open_browser_extensions(flatpak_id, binary):
         url = "chrome://extensions"
@@ -1036,6 +1065,7 @@ class LdmApp(Gtk.Application):
         self.win = None
         self.api = None
         self.tray = None
+        self._ext_checked = False
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -1061,6 +1091,9 @@ class LdmApp(Gtk.Application):
         if not tray or not self.tray:
             self.win.show_all()
             self.win.present()
+            if not self._ext_checked:   # dá tempo da extensão (se instalada) conectar antes de avisar
+                self._ext_checked = True
+                GLib.timeout_add_seconds(4, self.win.ext_prompt)
         for u in urls:
             if u.startswith("ldm://"):
                 u = u[6:]

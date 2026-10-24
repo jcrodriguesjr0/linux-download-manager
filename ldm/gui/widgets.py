@@ -2,7 +2,9 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk  # noqa: E402
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
+
+from .. import sysint  # noqa: E402
 
 
 def grid(spacing=8):
@@ -139,3 +141,23 @@ def check_list(columns):
         c.set_sort_column_id(i)
         tv.append_column(c)
     return tv, store
+
+
+def raise_popup(w):
+    """Mostra uma janela por cima de tudo, mesmo com a janela principal minimizada ou na bandeja.
+
+    No Windows a janela "dona" minimizada esconde as filhas, e um processo em segundo plano não pode
+    roubar o foco; por isso a janela sai sem dona e fica "sempre no topo" por um instante.
+    """
+    p = w.get_transient_for()
+    if p is not None:
+        gw = p.get_window()
+        if not p.get_visible() or gw is None or gw.get_state() & Gdk.WindowState.ICONIFIED:
+            w.set_transient_for(None)
+    w.show_all()
+    w.deiconify()
+    w.present()
+    if sysint.IS_WIN:
+        w.set_keep_above(True)
+        w.set_urgency_hint(True)
+        GLib.timeout_add(800, lambda: (w.set_keep_above(False), False)[1])

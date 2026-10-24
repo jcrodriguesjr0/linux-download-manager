@@ -15,7 +15,7 @@ from . import theme  # noqa: E402
 from ..engine import ST_COMPLETE, ST_CONNECTING, ST_DOWNLOADING  # noqa: E402
 from ..util import (batch_urls, ext_of, filename_from_headers, fmt_eta, fmt_rate, fmt_size,  # noqa: E402
                     looks_like_url, match_ext)
-from .widgets import (check, check_list, combo, confirm, entry, folder_entry, grid, message, row,  # noqa: E402
+from .widgets import (check, check_list, combo, confirm, entry, folder_entry, grid, message, raise_popup, row,  # noqa: E402
                       scrolled, spin)
 
 
@@ -84,7 +84,7 @@ class FileInfoDialog(Gtk.Dialog):
         start = self.add_button("Iniciar download", Gtk.ResponseType.OK)
         start.get_style_context().add_class("suggested-action")
         self.connect("response", self._response)
-        self.show_all()
+        raise_popup(self)
         threading.Thread(target=self._probe, daemon=True).start()
 
     def _probe(self):
@@ -270,7 +270,7 @@ class ProgressWindow(Gtk.Window):
         outer.pack_start(bb, False, False, 0)
         self.timer = GLib.timeout_add(500, self.tick)
         self.connect("destroy", lambda *_: GLib.source_remove(self.timer))
-        self.show_all()
+        raise_popup(self)
         self.tick()
 
     def _save_done_opts(self, *_):
@@ -359,7 +359,7 @@ class CompleteDialog(Gtk.Dialog):
         self.add_button("Fechar", Gtk.ResponseType.CLOSE)
         self.connect("response", self._close)
         self.set_default_size(520, -1)
-        self.show_all()
+        raise_popup(self)
 
     def _close(self, *_):
         if self.dont.get_active():
@@ -553,7 +553,7 @@ class LinksDialog(Gtk.Window):
         bb.pack_end(ok, False, False, 0)
         box.pack_start(bb, False, False, 0)
         self._apply_filter()
-        self.show_all()
+        raise_popup(self)
 
     def _apply_filter(self, *_):
         pat = self.filter.get_text().strip()

@@ -55,6 +55,9 @@ class Api:
             def _origin_ok(self):
                 o = self.headers.get("Origin", "")
                 if o.startswith(EXT_ORIGINS):
+                    if not api.m.s["ext_seen"]:     # a extensão está instalada: não precisa mais do aviso
+                        api.m.s["ext_seen"] = True
+                        api.m.s.save()
                     return True
                 # Sem Origin: só com cabeçalho próprio. Páginas web não enviam cabeçalho customizado
                 # sem preflight, e o preflight de origens não-extensão é recusado em do_OPTIONS.
