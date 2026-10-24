@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux Download Manager – free IDM alternative for Linux, Steam Deck and Windows</title>
+<meta name="description" content="Free and open source download manager and accelerator, an Internet Download Manager (IDM) alternative for Linux, Steam Deck and Windows. Multi-connection downloads, resume, and a video downloader for any website.">
+<meta name="keywords" content="IDM for Linux, IDM alternative, download manager Linux, download accelerator, video downloader, Steam Deck, yt-dlp GUI, gerenciador de downloads Linux">
+<link rel="canonical" href="https://jcrodriguesjr0.github.io/linux-download-manager/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linux Download Manager – free IDM alternative">
+<meta property="og:description" content="Multi-connection downloads, resume and a video downloader for any website. Linux, Steam Deck and Windows.">
+<meta property="og:url" content="https://jcrodriguesjr0.github.io/linux-download-manager/">
+<meta property="og:image" content="https://jcrodriguesjr0.github.io/linux-download-manager/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Linux Download Manager",
+  "alternateName": ["LDM", "Lunix Download Manager"],
+  "description": "Free download manager and accelerator, an Internet Download Manager (IDM) alternative for Linux, Steam Deck and Windows, with a video downloader for any website.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Linux, SteamOS, Windows 10, Windows 11",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "license": "https://opensource.org/licenses/MIT",
+  "downloadUrl": "https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest",
+  "codeRepository": "https://github.com/jcrodriguesjr0/linux-download-manager",
+  "image": "https://jcrodriguesjr0.github.io/linux-download-manager/social-preview.png",
+  "screenshot": "https://jcrodriguesjr0.github.io/linux-download-manager/screenshots/main-dark.png"
+}
+</script>
+<style>
+:root{--bg:#141316;--surface:#1E1A1E;--border:#382229;--text:#F4F1F3;--muted:#B8AEB3;--primary:#F43F5E;--primary-l:#FB7185;--video:#F59E0B}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#FFFBFC;--surface:#FFFFFF;--border:#F3D6DC;--text:#1E1A1E;--muted:#5E5358;--primary-l:#E11D48}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.6 Inter,"Segoe UI",system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;gap:12px;padding:20px 0}
+header img{width:40px;height:40px}
+header b{font-size:18px}
+header nav{margin-left:auto;display:flex;gap:16px}
+a{color:var(--primary-l)}
+nav a{color:var(--muted);text-decoration:none}
+.hero{padding:40px 0 24px}
+h1{font-size:clamp(32px,6vw,52px);line-height:1.1;margin:0 0 16px}
+h1 span{color:var(--primary)}
+.lead{font-size:20px;color:var(--muted);max-width:720px;margin:0 0 28px}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-block;padding:12px 22px;border-radius:10px;font-weight:600;text-decoration:none}
+.btn.p{background:var(--primary);color:#fff}
+.btn.v{background:var(--video);color:#141316}
+.btn.g{border:1px solid var(--border);color:var(--text)}
+.shot{width:100%;height:auto;border-radius:12px;border:1px solid var(--border);margin:32px 0}
+h2{font-size:28px;margin:48px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card h3{margin:0 0 6px;font-size:18px}
+.card p{margin:0;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+code{font-family:"JetBrains Mono",Consolas,monospace;font-size:14px;background:var(--surface);padding:2px 6px;border-radius:6px}
+ol li{margin-bottom:6px}
+footer{color:var(--muted);font-size:14px;padding:48px 0 32px;border-top:1px solid var(--border);margin-top:56px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <img src="logo.png" alt="LDM logo"><b>Linux Download Manager</b>
+  <nav><a href="#download">Download</a><a href="#pt">Português</a><a href="https://github.com/jcrodriguesjr0/linux-download-manager">GitHub</a></nav>
+</header>
+
+<section class="hero">
+  <h1>The free <span>IDM alternative</span> for Linux, Steam Deck and Windows</h1>
+  <p class="lead">Linux Download Manager speeds up downloads with multiple connections, resumes interrupted files and downloads videos from any website with one button on top of the player. Free and open source (MIT).</p>
+  <div class="btns" id="download">
+    <a class="btn p" href="https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest">Download for Linux (AppImage)</a>
+    <a class="btn v" href="https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest">Download for Windows</a>
+    <a class="btn g" href="https://github.com/jcrodriguesjr0/linux-download-manager">Source code</a>
+  </div>
+  <img class="shot" src="screenshots/main-dark.png" width="1232" height="753" alt="Linux Download Manager main window with downloads in progress">
+</section>
+
+<h2>Features</h2>
+<div class="grid">
+  <div class="card"><h3>Download accelerator</h3><p>Multiple connections with dynamic segmentation, like IDM. Resume after a network drop or a reboot. HTTP, HTTPS and FTP.</p></div>
+  <div class="card"><h3>Video downloader</h3><p>A "Download this video" button on any player. YouTube and about 1,800 sites through yt-dlp, plus HLS/DASH capture, quality choice, MP3 and playlists.</p></div>
+  <div class="card"><h3>Browser integration</h3><p>Chrome, Edge, Brave and Firefox extension. Large files go to LDM automatically; Alt+click lets the browser handle it.</p></div>
+  <div class="card"><h3>Queues and scheduler</h3><p>Categories, queues, scheduled start and stop, speed limiter, shut down when done, IDM list import.</p></div>
+  <div class="card"><h3>Steam Deck ready</h3><p>A single AppImage that runs on SteamOS in desktop mode, with Flatpak browsers supported.</p></div>
+  <div class="card"><h3>Also on Windows</h3><p>As "Lunix Download Manager": installer without admin rights, or a portable zip.</p></div>
+</div>
+
+<h2>Install</h2>
+<table>
+  <tr><th>Linux / Steam Deck</th><td>Download the <code>.AppImage</code>, run <code>chmod +x</code> on it and open it. Needs glibc 2.38+ (SteamOS, Ubuntu 24.04+, Mint 22+, Fedora 39+, Debian 13, Arch).</td></tr>
+  <tr><th>Windows 10/11</th><td>Run <code>Lunix_Download_Manager-Setup.exe</code>. On SmartScreen, click <b>More info → Run anyway</b>.</td></tr>
+  <tr><th>Browser extension</th><td>Open <code>chrome://extensions</code>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and pick the folder shown in LDM under <b>☰ → Help → Browser extension</b>. <a href="https://github.com/jcrodriguesjr0/linux-download-manager#browser-extension">Full guide</a>.</td></tr>
+</table>
+
+<div class="grid" style="margin-top:32px">
+  <img class="shot" style="margin:0" src="screenshots/video-button.png" loading="lazy" alt="Download this video button on top of a web video player">
+  <img class="shot" style="margin:0" src="screenshots/video.png" loading="lazy" alt="Video quality selection dialog">
+</div>
+
+<section id="pt" lang="pt-BR">
+  <h2>Em português</h2>
+  <p><b>Linux Download Manager</b> é um gerenciador e acelerador de downloads gratuito, uma alternativa ao <b>IDM (Internet Download Manager) para Linux</b>, Steam Deck e Windows. Baixa com várias conexões, retoma downloads interrompidos e baixa vídeos de qualquer site com um botão sobre o player.</p>
+  <ol>
+    <li>Baixe a AppImage (Linux) ou o instalador (Windows) na <a href="https://github.com/jcrodriguesjr0/linux-download-manager/releases/latest">página de releases</a>.</li>
+    <li>Instale a extensão do navegador: o programa mostra o passo a passo ao abrir. <a href="https://github.com/jcrodriguesjr0/linux-download-manager/blob/main/README.pt-BR.md#extensão-do-navegador">Tutorial</a>.</li>
+    <li>Arquivos a partir de 50 MB e vídeos vão direto para o LDM.</li>
+  </ol>
+</section>
+
+<footer>
+  MIT license · Independent project, not affiliated with Tonec Inc. or Internet Download Manager. ·
+  <a href="https://github.com/jcrodriguesjr0/linux-download-manager">GitHub</a> ·
+  <a href="https://github.com/jcrodriguesjr0/linux-download-manager/issues">Report a problem</a>
+</footer>
+</main>
+</body>
+</html>
